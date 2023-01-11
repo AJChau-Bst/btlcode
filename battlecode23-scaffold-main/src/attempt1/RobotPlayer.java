@@ -137,7 +137,6 @@ public strictfp class RobotPlayer {
         } */
 
 
-
         //if adjacent to well, start fucking collecting
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
