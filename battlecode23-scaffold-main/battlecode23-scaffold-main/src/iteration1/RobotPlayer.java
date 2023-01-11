@@ -131,10 +131,10 @@ public strictfp class RobotPlayer {
         MapLocation nearestWell = nearWell[0].getMapLocation();
         int desiredResourceAmount = 40;
         //if carrier is full, go back to HQ
-        int total = rc.getResourceAmount(ADAMANTIUM) + rc.getResourceAmount(MANA)+rc.getResourceAmount(ELIXIR)
+/*         int total = rc.getResourceAmount(ADAMANTIUM) + rc.getResourceAmount(MANA)+rc.getResourceAmount(ELIXIR)
         if (total == desiredResourceAmount) {
             rc.move()
-        }
+        } */
 
 
 
