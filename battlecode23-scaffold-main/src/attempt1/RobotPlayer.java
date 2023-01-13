@@ -193,7 +193,8 @@ public strictfp class RobotPlayer {
             }
             //int shortestHQID = robotID.get(idealIndex);
             Direction nearestHQ = me.directionTo(buttToDec(rc.readSharedArray(60+idealIndex),width, height));
-            rc.setIndicatorString("Going to " + rc.readSharedArray(60+idealIndex));
+            rc.setIndicatiorString("Going to: " + rc.readSharedArray(60+idealIndex) + "HQ Distance is " + distanceOfHQ.toString());
+            //rc.setIndicatorString("Going to " + rc.readSharedArray(60+idealIndex));
             if(rc.canMove(nearestHQ)){
             	rc.move(nearestHQ);
             }
