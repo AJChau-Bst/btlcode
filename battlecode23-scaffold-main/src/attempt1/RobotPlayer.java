@@ -232,22 +232,13 @@ public strictfp class RobotPlayer {
     //}
 
     public static int decToButt(MapLocation loc, float width, float height){
-        //float xRes = rc.getMapWidth() / 10;
-        //float yRes = rc.getMapHeight() / 10;
-        //Scanner scanner = new Scanner(loc.toString());
-        //scanner.useDelimiter(",");
-        //String x = scanner.next();
-        //String y = scanner.next();
-        //x = x.replace("[", "");
-        //y = y.replace("]", "");
-        //int newx = Integer.parseInt(x);
-        //int newy = Integer.parseInt(y);
-        System.out.println(loc.toString());
-        String s = loc.toString();
-        char x = s.charAt(1);
-        char y = s.charAt(3);
-        int newx = Integer.parseInt(String.valueOf(x));
-        int newy = Integer.parseInt(String.valueOf(y));
+        String coordinates = loc.toString();
+        int commaLoc = coordinates.indexOf(", ");
+        coordinates = coordinates.replace("[", "");
+        coordinates = coordinates.replace("]", "");
+        coordinates = coordinates.replace(" ", "");
+
+         x = Integer.parseInt(coordinates.substring(0,commaLoc));
         width = width/10;
         height = height/10;
         int ten = Math.round(newx / width) * 10;
