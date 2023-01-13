@@ -213,6 +213,7 @@ public strictfp class RobotPlayer {
 	            }
 	        }
 	        Direction nearestHQ = me.directionTo(hqs[nearHQidx]);
+            MapLocation targetHQ = hqs[nearHQidx];
             rc.setIndicatorString("Going to " + hqs[nearHQidx].x + " " + hqs[nearHQidx].y);
             if(rc.canMove(nearestHQ)){
             	rc.move(nearestHQ);
@@ -237,14 +238,31 @@ public strictfp class RobotPlayer {
         }
 
         //if wells nearby, move to them
-        if(nearWell.length >= 1){
+        if(nearWell.length >= 1 && total >= desiredResourceAmount){
             Direction dir = rc.getLocation().directionTo(nearestWell);
             if(rc.canMove(dir)){
                 rc.move(dir);
             }
         }
 
-        
+        //if at location, scan for nearest HQ and move there. 
+        if(decToButt(me, width, height) == decToButt(targetHQ, width, height)){
+            RobotInfo[] senseNearRobots = new RobotInfo[81];
+            senseNearRobots = rc.senseNearbyRobots();
+            for(int i = 0; i<senseNearRobots.length; i++){
+                if senseNearRobots[i].getType() = RobotType.HEADQUARTERS{
+                    MapLocation preciseTarget = senseNearRobots[i].getMapLocation();
+                }
+                Direction precisedir = rc.getLocation().directionTo(preciseTarget);
+                rc.move(precisedir);
+            }
+        }   if(rc.getLocation().isAdjacentTo(preciseTarget)){
+                if(rc.canTransferResource(preciseTarget)){
+                    rc.transferResource(preciseTarget, ResourceType.ADAMANTIUM, rc.getResourceAmount(ResourceType.ADAMANTIUM));
+                    rc.transferResource(preciseTarget, ResourceType.MANA, rc.getResourceAmount(ResourceType.MANA));
+                    rc.transferResource(preciseTarget, ResourceType.ELIXIR, rc.getResourceAmount(ResourceType.ELIXIR));
+                }
+        }
     }
     /**
      * Run a single turn for a Launcher.
