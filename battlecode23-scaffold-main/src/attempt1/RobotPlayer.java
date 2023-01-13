@@ -138,7 +138,7 @@ public strictfp class RobotPlayer {
         //rc.setIndicatorString("HQ1 - Writing to Shared Array + " + buttTranslation);
         //rc.writeSharedArray(lookingForIndex, buttTranslation);
         //int buttRead = rc.readSharedArray(lookingForIndex);
-        //rc.setIndicatorString(buttRead + " ");
+        //rc.setIndicatorString(buttTranslation + "");
 
         //Adding HQ location to Shared Array using Butt
         if(rc.readSharedArray(lookingForIndex) == 0){
@@ -270,7 +270,7 @@ public strictfp class RobotPlayer {
         buttNum = buttNum - 100;
         float dx = (buttNum * width) / 10;
         int x = (int) Math.floor(dx);
-        int y = Math.round((buttNum * height)) % 10;
+        int y = Math.round((buttNum % 10) * height);
         MapLocation newLoc = new MapLocation(x,y);
         return newLoc;
     }
