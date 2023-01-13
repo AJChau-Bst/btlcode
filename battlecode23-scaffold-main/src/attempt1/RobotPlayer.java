@@ -128,12 +128,14 @@ public strictfp class RobotPlayer {
         if(rc.canBuildRobot(RobotType.CARRIER, spawnLocation)){
             rc.buildRobot(RobotType.CARRIER, spawnLocation);
         }
-        System.out.println(me.toString());
-        System.out.println(decToButt(me,width,height));
-        rc.setIndicatorString("Trying to write location!" + me);
+        //System.out.println(me.toString());
+        //System.out.println(decToButt(me,width,height));
+        //rc.setIndicatorString("Trying to write location!" + me);
         int buttTranslation = decToButt(me, width, height);
-        rc.setIndicatorString("HQ1 - Writing to Shared Array + " + buttTranslation);
-        rc.writeSharedArray(buttTranslation, lookingForIndex);
+        //rc.setIndicatorString("HQ1 - Writing to Shared Array + " + buttTranslation);
+        rc.writeSharedArray(lookingForIndex, buttTranslation);
+        //int buttRead = rc.readSharedArray(lookingForIndex);
+        //rc.setIndicatorString(buttRead + " ");
 
         //Adding HQ location to Shared Array using Butt
         /*if(rc.canWriteSharedArray(buttTranslation,lookingForIndex)){
@@ -146,11 +148,12 @@ public strictfp class RobotPlayer {
         } else if (rc.canWriteSharedArray(buttTranslation, lookingForIndex - 3)){
             rc.writeSharedArray(buttTranslation, lookingForIndex-3); */
         //} 
-        MapLocation hqOne = buttToDec(rc.readSharedArray(lookingForIndex), width, height);
+        //MapLocation hqOne = buttToDec(rc.readSharedArray(lookingForIndex), width, height);
         //MapLocation hqTwo = buttToDec(rc.readSharedArray(lookingForIndex-1), width, height);
         //MapLocation hqThree = buttToDec(rc.readSharedArray(lookingForIndex-2), width, height);
         //MapLocation hqFour = buttToDec(rc.readSharedArray(lookingForIndex-3), width, height);
         //rc.setIndicatorString(hqOne.x + " " + hqOne.y + " " + hqTwo.x + " " + hqTwo.y + " " + hqThree.x + " " + hqThree.y + " " + hqFour.x + " " + hqFour.y + " ");
+        //rc.setIndicatorString(hqOne + "");
     }
 
     /**
@@ -192,7 +195,7 @@ public strictfp class RobotPlayer {
                 rc.move(dir);
             }
         }
-
+/*
         //If Robot is full, go to the closest HQ to deposit.
         int elAmt = rc.getResourceAmount(ResourceType.ELIXIR);
         int adAmt = rc.getResourceAmount(ResourceType.ADAMANTIUM);
@@ -221,7 +224,7 @@ public strictfp class RobotPlayer {
             Direction nearestHQ = me.directionTo(buttToDec(rc.readSharedArray(lookingForIndex-idealIndex),width, height));
             rc.setIndicatorString("Going to " + rc.readSharedArray(lookingForIndex-idealIndex));
             rc.move(nearestHQ);
-    }
+        }*/
     }
     /**
      * Run a single turn for a Launcher.
@@ -232,29 +235,20 @@ public strictfp class RobotPlayer {
     //}
 
     public static int decToButt(MapLocation loc, float width, float height){
-        String coordinates = loc.toString();
-        int commaLoc = coordinates.indexOf(", ");
-        coordinates = coordinates.replace("[", "");
-        coordinates = coordinates.replace("]", "");
-        coordinates = coordinates.replace(" ", "");
-
-         x = Integer.parseInt(coordinates.substring(0,commaLoc));
+        int x = loc.x;
+        int y = loc.y;
         width = width/10;
         height = height/10;
-        int ten = Math.round(newx / width) * 10;
-        int one = Math.round(newy / height);
-        //System.out.println("STOP RIGHT HERE THIS IS YOUR TEXT" + (ten + one));
+        int ten = Math.round(x / width) * 10;
+        int one = Math.round(y / height);
         return ten + one;
-        //return x;
     }
 
     public static MapLocation buttToDec(int buttNum, float width, float height){
-        //float xRes = rc.getMapWidth() / 10;
-        //float yRes = rc.getMapHeight() / 10;
         width = width/10;
         height = height/10;
-        double dx = Math.floor((buttNum * width) / 10);
-        int x = (int)dx;
+        float dx = (buttNum * width) / 10;
+        int x = (int) Math.floor(dx);
         int y = Math.round((buttNum * height)) % 10;
         MapLocation newLoc = new MapLocation(x,y);
         return newLoc;
