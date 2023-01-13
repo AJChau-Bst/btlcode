@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.*;
-import java.lang.Math;
+import java.lang.*;
 
 /**
  * RobotPlayer is the class that describes your main robot strategy.
@@ -119,25 +119,7 @@ public strictfp class RobotPlayer {
         float width = rc.getMapWidth();
         float height = rc.getMapHeight();
 
-
-        //Adding HQ location to Shared Array using Butt
-        int buttTranslation = decToButt(me, width, height);
-        if(rc.canWriteSharedArray(buttTranslation,lookingForIndex)){
-            rc.writeSharedArray(buttTranslation, lookingForIndex);
-        } else if (rc.canWriteSharedArray(buttTranslation, lookingForIndex - 1)){
-            rc.writeSharedArray(buttTranslation, lookingForIndex-1);
-        } else if (rc.canWriteSharedArray(buttTranslation, lookingForIndex - 2)){
-            rc.writeSharedArray(buttTranslation, lookingForIndex-2);
-        } else if (rc.canWriteSharedArray(buttTranslation, lookingForIndex - 3)){
-            rc.writeSharedArray(buttTranslation, lookingForIndex-3);
-        }
-        MapLocation hqOne = buttToDec(rc.readSharedArray(lookingForIndex), width, height);
-        MapLocation hqTwo = buttToDec(rc.readSharedArray(lookingForIndex-1), width, height);
-        MapLocation hqThree = buttToDec(rc.readSharedArray(lookingForIndex-2), width, height);
-        MapLocation hqFour = buttToDec(rc.readSharedArray(lookingForIndex-3), width, height);
-        rc.setIndicatorString(hqOne.x + " " + hqOne.y + " " + hqTwo.x + " " + hqTwo.y + " " + hqThree.x + " " + hqThree.y + " " + hqFour.x + " " + hqFour.y + " ");
-
-        //Find Nearby Wells
+                //Find Nearby Wells
         WellInfo[] nearWell = rc.senseNearbyWells();
         MapLocation nearestWell = nearWell[0].getMapLocation();
         MapLocation spawnLocation = rc.adjacentLocation(rc.getLocation().directionTo(nearestWell));
@@ -146,6 +128,29 @@ public strictfp class RobotPlayer {
         if(rc.canBuildRobot(RobotType.CARRIER, spawnLocation)){
             rc.buildRobot(RobotType.CARRIER, spawnLocation);
         }
+        System.out.println(me.toString());
+        System.out.println(decToButt(me,width,height));
+        rc.setIndicatorString("Trying to write location!" + me);
+        int buttTranslation = decToButt(me, width, height);
+        rc.setIndicatorString("HQ1 - Writing to Shared Array + " + buttTranslation);
+        rc.writeSharedArray(buttTranslation, lookingForIndex);
+
+        //Adding HQ location to Shared Array using Butt
+        /*if(rc.canWriteSharedArray(buttTranslation,lookingForIndex)){
+            rc.setIndicatorString("HQ1 - Writing to Shared Array + " + me);
+            rc.writeSharedArray(buttTranslation, lookingForIndex);
+         } else if (rc.canWriteSharedArray(buttTranslation, lookingForIndex - 1)){
+            rc.writeSharedArray(buttTranslation, lookingForIndex-1);
+        } else if (rc.canWriteSharedArray(buttTranslation, lookingForIndex - 2)){
+            rc.writeSharedArray(buttTranslation, lookingForIndex-2);
+        } else if (rc.canWriteSharedArray(buttTranslation, lookingForIndex - 3)){
+            rc.writeSharedArray(buttTranslation, lookingForIndex-3); */
+        //} 
+        MapLocation hqOne = buttToDec(rc.readSharedArray(lookingForIndex), width, height);
+        //MapLocation hqTwo = buttToDec(rc.readSharedArray(lookingForIndex-1), width, height);
+        //MapLocation hqThree = buttToDec(rc.readSharedArray(lookingForIndex-2), width, height);
+        //MapLocation hqFour = buttToDec(rc.readSharedArray(lookingForIndex-3), width, height);
+        //rc.setIndicatorString(hqOne.x + " " + hqOne.y + " " + hqTwo.x + " " + hqTwo.y + " " + hqThree.x + " " + hqThree.y + " " + hqFour.x + " " + hqFour.y + " ");
     }
 
     /**
@@ -166,33 +171,6 @@ public strictfp class RobotPlayer {
         MapLocation nearestWell = nearWell[0].getMapLocation();
         int desiredResourceAmount = 40;
         
-        //If Robot is full, go to the closest HQ to deposit.
-        int elAmt = rc.getResourceAmount(ResourceType.ELIXIR);
-        int adAmt = rc.getResourceAmount(ResourceType.ADAMANTIUM);
-        int maAmt = rc.getResourceAmount(ResourceType.MANA);
-        int total = elAmt + adAmt + maAmt;
-        if (total == desiredResourceAmount) {
-            //List<int> distanceOFHQ = new ArrayList();
-            int arrayCounter = 0;
-            while(lookingForIndex != 0){
-                while(lookingForIndex > 59){
-                    int x = me.distanceSquaredTo(buttToDec(rc.readSharedArray(lookingForIndex), width, height));
-                    distanceOfHQ[arrayCounter] = x;
-                    lookingForIndex -= 1;
-                    arrayCounter += 1;
-                }
-            }
-            for(int counter = 0; distanceOfHQ.length > counter; counter++){
-                int smallestNumber = 360;
-                if(distanceOfHQ[counter] != 0 && distanceOfHQ[counter] < smallestNumber){
-                    smallestNumber = distanceOfHQ[counter];
-                    idealIndex = counter;
-                }
-            }
-            //int shortestHQID = robotID.get(idealIndex);
-            Direction nearestHQ = me.directionTo(buttToDec(rc.readSharedArray(lookingForIndex-idealIndex),width, height));
-            rc.move(nearestHQ);
-
         //if adjacent to well, start fucking collecting
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
@@ -214,7 +192,35 @@ public strictfp class RobotPlayer {
                 rc.move(dir);
             }
         }
-        
+
+        //If Robot is full, go to the closest HQ to deposit.
+        int elAmt = rc.getResourceAmount(ResourceType.ELIXIR);
+        int adAmt = rc.getResourceAmount(ResourceType.ADAMANTIUM);
+        int maAmt = rc.getResourceAmount(ResourceType.MANA);
+        int total = elAmt + adAmt + maAmt;
+        if (total == desiredResourceAmount) {
+            rc.setIndicatorString("Heading Back");
+            //List<int> distanceOFHQ = new ArrayList();
+            int arrayCounter = 0;
+            while(rc.readSharedArray(lookingForIndex) != 0){
+                while(lookingForIndex > 59){
+                    int x = me.distanceSquaredTo(buttToDec(rc.readSharedArray(lookingForIndex), width, height));
+                    distanceOfHQ[arrayCounter] = x;
+                    lookingForIndex -= 1;
+                    arrayCounter += 1;
+                }
+            }
+            for(int counter = 0; distanceOfHQ.length > counter; counter++){
+                int smallestNumber = 360;
+                if(distanceOfHQ[counter] != 0 && distanceOfHQ[counter] < smallestNumber){
+                    smallestNumber = distanceOfHQ[counter];
+                    idealIndex = counter;
+                }
+            }
+            //int shortestHQID = robotID.get(idealIndex);
+            Direction nearestHQ = me.directionTo(buttToDec(rc.readSharedArray(lookingForIndex-idealIndex),width, height));
+            rc.setIndicatorString("Going to " + rc.readSharedArray(lookingForIndex-idealIndex));
+            rc.move(nearestHQ);
     }
     }
     /**
@@ -228,16 +234,27 @@ public strictfp class RobotPlayer {
     public static int decToButt(MapLocation loc, float width, float height){
         //float xRes = rc.getMapWidth() / 10;
         //float yRes = rc.getMapHeight() / 10;
-        Scanner scanner = new Scanner(loc.toString());
-        scanner.useDelimiter(",");
-        int x = scanner.nextInt();
-        int y = scanner.nextInt();
-
+        //Scanner scanner = new Scanner(loc.toString());
+        //scanner.useDelimiter(",");
+        //String x = scanner.next();
+        //String y = scanner.next();
+        //x = x.replace("[", "");
+        //y = y.replace("]", "");
+        //int newx = Integer.parseInt(x);
+        //int newy = Integer.parseInt(y);
+        System.out.println(loc.toString());
+        String s = loc.toString();
+        char x = s.charAt(1);
+        char y = s.charAt(3);
+        int newx = Integer.parseInt(String.valueOf(x));
+        int newy = Integer.parseInt(String.valueOf(y));
         width = width/10;
         height = height/10;
-        int ten = Math.round(x / width) * 10;
-        int one = Math.round(y / height);
+        int ten = Math.round(newx / width) * 10;
+        int one = Math.round(newy / height);
+        //System.out.println("STOP RIGHT HERE THIS IS YOUR TEXT" + (ten + one));
         return ten + one;
+        //return x;
     }
 
     public static MapLocation buttToDec(int buttNum, float width, float height){
