@@ -8,6 +8,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.*;
+import java.lang.Math;
 
 /**
  * RobotPlayer is the class that describes your main robot strategy.
@@ -76,7 +78,7 @@ public strictfp class RobotPlayer {
                 switch (rc.getType()) {
                     case HEADQUARTERS:     runHeadquarters(rc);  break;
                     case CARRIER:      runCarrier(rc);   break;
-                    case LAUNCHER: runLauncher(rc); break;
+                    //case LAUNCHER: runLauncher(rc); break;
                     case BOOSTER: // Examplefuncsplayer doesn't use any of these robot types below.
                     case DESTABILIZER: // You might want to give them a try!
                     case AMPLIFIER:       break;
@@ -111,11 +113,36 @@ public strictfp class RobotPlayer {
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
      */
     static void runHeadquarters(RobotController rc) throws GameActionException {
-        //headquarter code
+        //Declare Variables
+        int lookingForIndex = 63;
+        MapLocation me = rc.getLocation();
+        float width = rc.getMapWidth();
+        float height = rc.getMapHeight();
+
+
+        //Adding HQ location to Shared Array using Butt
+        int buttTranslation = decToButt(me, width, height);
+        if(rc.canWriteSharedArray(buttTranslation,lookingForIndex)){
+            rc.writeSharedArray(buttTranslation, lookingForIndex);
+        } else if (rc.canWriteSharedArray(buttTranslation, lookingForIndex - 1)){
+            rc.writeSharedArray(buttTranslation, lookingForIndex-1);
+        } else if (rc.canWriteSharedArray(buttTranslation, lookingForIndex - 2)){
+            rc.writeSharedArray(buttTranslation, lookingForIndex-2);
+        } else if (rc.canWriteSharedArray(buttTranslation, lookingForIndex - 3)){
+            rc.writeSharedArray(buttTranslation, lookingForIndex-3);
+        }
+        MapLocation hqOne = buttToDec(rc.readSharedArray(lookingForIndex), width, height);
+        MapLocation hqTwo = buttToDec(rc.readSharedArray(lookingForIndex-1), width, height);
+        MapLocation hqThree = buttToDec(rc.readSharedArray(lookingForIndex-2), width, height);
+        MapLocation hqFour = buttToDec(rc.readSharedArray(lookingForIndex-3), width, height);
+        rc.setIndicatorString(hqOne.x + " " + hqOne.y + " " + hqTwo.x + " " + hqTwo.y + " " + hqThree.x + " " + hqThree.y + " " + hqFour.x + " " + hqFour.y + " ");
+
+        //Find Nearby Wells
         WellInfo[] nearWell = rc.senseNearbyWells();
         MapLocation nearestWell = nearWell[0].getMapLocation();
         MapLocation spawnLocation = rc.adjacentLocation(rc.getLocation().directionTo(nearestWell));
         //Direction targetAdWell = rc.getLocation().directionTo(nearestAdWell);
+        //Build Carriers, if we can build carriers -- NEED TO CHANGE THIS LOGIC/ADD AND CONDITION
         if(rc.canBuildRobot(RobotType.CARRIER, spawnLocation)){
             rc.buildRobot(RobotType.CARRIER, spawnLocation);
         }
@@ -126,16 +153,45 @@ public strictfp class RobotPlayer {
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
      */
     static void runCarrier(RobotController rc) throws GameActionException {
-        WellInfo[] nearWell = rc.senseNearbyWells();
+        //Define Variables
+        int lookingForIndex = 63;
+        int[] distanceOfHQ = new int[4];
+        float width = rc.getMapWidth();
+        float height = rc.getMapHeight();
         MapLocation me = rc.getLocation();
+        int idealIndex = 0;
+        
+        //Find Wells
+        WellInfo[] nearWell = rc.senseNearbyWells();
         MapLocation nearestWell = nearWell[0].getMapLocation();
         int desiredResourceAmount = 40;
-        //if carrier is full, go back to HQ
-/*         int total = rc.getResourceAmount(ADAMANTIUM) + rc.getResourceAmount(MANA)+rc.getResourceAmount(ELIXIR)
+        
+        //If Robot is full, go to the closest HQ to deposit.
+        int elAmt = rc.getResourceAmount(ResourceType.ELIXIR);
+        int adAmt = rc.getResourceAmount(ResourceType.ADAMANTIUM);
+        int maAmt = rc.getResourceAmount(ResourceType.MANA);
+        int total = elAmt + adAmt + maAmt;
         if (total == desiredResourceAmount) {
-            rc.move()
-        } */
-
+            //List<int> distanceOFHQ = new ArrayList();
+            int arrayCounter = 0;
+            while(lookingForIndex != 0){
+                while(lookingForIndex > 59){
+                    int x = me.distanceSquaredTo(buttToDec(rc.readSharedArray(lookingForIndex), width, height));
+                    distanceOfHQ[arrayCounter] = x;
+                    lookingForIndex -= 1;
+                    arrayCounter += 1;
+                }
+            }
+            for(int counter = 0; distanceOfHQ.length > counter; counter++){
+                int smallestNumber = 360;
+                if(distanceOfHQ[counter] != 0 && distanceOfHQ[counter] < smallestNumber){
+                    smallestNumber = distanceOfHQ[counter];
+                    idealIndex = counter;
+                }
+            }
+            //int shortestHQID = robotID.get(idealIndex);
+            Direction nearestHQ = me.directionTo(buttToDec(rc.readSharedArray(lookingForIndex-idealIndex),width, height));
+            rc.move(nearestHQ);
 
         //if adjacent to well, start fucking collecting
         for (int dx = -1; dx <= 1; dx++) {
@@ -160,12 +216,39 @@ public strictfp class RobotPlayer {
         }
         
     }
-
+    }
     /**
      * Run a single turn for a Launcher.
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
      */
-    static void runLauncher(RobotController rc) throws GameActionException {
-        //launcher code
+    //static void runLauncher(RobotController rc) throws GameActionException {
+        
+    //}
+
+    public static int decToButt(MapLocation loc, float width, float height){
+        //float xRes = rc.getMapWidth() / 10;
+        //float yRes = rc.getMapHeight() / 10;
+        Scanner scanner = new Scanner(loc.toString());
+        scanner.useDelimiter(",");
+        int x = scanner.nextInt();
+        int y = scanner.nextInt();
+
+        width = width/10;
+        height = height/10;
+        int ten = Math.round(x / width) * 10;
+        int one = Math.round(y / height);
+        return ten + one;
+    }
+
+    public static MapLocation buttToDec(int buttNum, float width, float height){
+        //float xRes = rc.getMapWidth() / 10;
+        //float yRes = rc.getMapHeight() / 10;
+        width = width/10;
+        height = height/10;
+        double dx = Math.floor((buttNum * width) / 10);
+        int x = (int)dx;
+        int y = Math.round((buttNum * height)) % 10;
+        MapLocation newLoc = new MapLocation(x,y);
+        return newLoc;
     }
 }
