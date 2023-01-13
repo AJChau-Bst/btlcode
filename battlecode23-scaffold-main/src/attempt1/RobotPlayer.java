@@ -57,7 +57,7 @@ public strictfp class RobotPlayer {
 
         // Hello world! Standard output is very useful for debugging.
         // Everything you say here will be directly viewable in your terminal when you run a match!
-        System.out.println("I'm a " + rc.getType() + " and I just got created! I have health " + rc.getHealth());
+        // System.out.println("I'm a " + rc.getType() + " and I just got created! I have health " + rc.getHealth());
 
         // You can also use indicators to save debug notes in replays.
         //rc.setIndicatorString("HAHA BUTT");
@@ -121,13 +121,16 @@ public strictfp class RobotPlayer {
 
                 //Find Nearby Wells
         WellInfo[] nearWell = rc.senseNearbyWells();
-        MapLocation nearestWell = nearWell[0].getMapLocation();
-        MapLocation spawnLocation = rc.adjacentLocation(rc.getLocation().directionTo(nearestWell));
-        //Direction targetAdWell = rc.getLocation().directionTo(nearestAdWell);
-        //Build Carriers, if we can build carriers -- NEED TO CHANGE THIS LOGIC/ADD AND CONDITION
-        if(rc.canBuildRobot(RobotType.CARRIER, spawnLocation)){
-            rc.buildRobot(RobotType.CARRIER, spawnLocation);
+        if(nearWell.length > 0) {
+        	MapLocation nearestWell = nearWell[0].getMapLocation();
+            MapLocation spawnLocation = rc.adjacentLocation(rc.getLocation().directionTo(nearestWell));
+            //Direction targetAdWell = rc.getLocation().directionTo(nearestAdWell);
+            //Build Carriers, if we can build carriers -- NEED TO CHANGE THIS LOGIC/ADD AND CONDITION
+            if(rc.canBuildRobot(RobotType.CARRIER, spawnLocation)){
+                rc.buildRobot(RobotType.CARRIER, spawnLocation);
+            }
         }
+        
         //System.out.println(me.toString());
         //System.out.println(decToButt(me,width,height));
         //rc.setIndicatorString("Trying to write location!" + me);
@@ -166,25 +169,24 @@ public strictfp class RobotPlayer {
         MapLocation me = rc.getLocation();
         int desiredResourceAmount = 40;
         
+        
         //If Robot is full, go to the closest HQ to deposit.
         int elAmt = rc.getResourceAmount(ResourceType.ELIXIR);
         int adAmt = rc.getResourceAmount(ResourceType.ADAMANTIUM);
         int maAmt = rc.getResourceAmount(ResourceType.MANA);
         int total = elAmt + adAmt + maAmt;
-        int lookingForIndex = 63;
-        int[] distanceOfHQ = new int[4];
-        int idealIndex = 0;
+        
         if (total >= desiredResourceAmount) {
             rc.setIndicatorString("Heading Back");
-            //List<int> distanceOFHQ = new ArrayList();
+            /*//List<int> distanceOFHQ = new ArrayList();
             int arrayCounter = 0;
-            while(lookingForIndex > 59){
+            while(lookingForIndex <= 63){
                 int x = me.distanceSquaredTo(buttToDec(rc.readSharedArray(lookingForIndex), width, height));
                 distanceOfHQ[arrayCounter] = x;
-                lookingForIndex -= 1;
+                lookingForIndex += 1;
                 arrayCounter += 1;
             }
-            for(int counter = 0; distanceOfHQ.length < counter; counter++){
+            for(int counter = 0; counter < distanceOfHQ.length; ++counter){
                 int smallestNumber = 7201;
                 if(distanceOfHQ[counter] < smallestNumber){
                     smallestNumber = distanceOfHQ[counter];
@@ -197,10 +199,25 @@ public strictfp class RobotPlayer {
             //rc.setIndicatorString("Going to " + rc.readSharedArray(60+idealIndex));
             if(rc.canMove(nearestHQ)){
             	rc.move(nearestHQ);
+            }*/
+	        int nearHQidx = 0;
+	        int nearHQdist = 7201;
+	        int dist = 7202;
+	        MapLocation[] hqs = new MapLocation[4];
+	        for(int i = 0; i < 4; ++i) {
+	        	hqs[i] = buttToDec(rc.readSharedArray(63-i), width, height);
+	        	dist = me.distanceSquaredTo(hqs[i]);
+	            if(dist < nearHQdist) {
+	            	nearHQidx = i;
+	            	nearHQdist = dist;
+	            }
+	        }
+	        Direction nearestHQ = me.directionTo(hqs[nearHQidx]);
+            rc.setIndicatorString("Going to " + hqs[nearHQidx].x + " " + hqs[nearHQidx].y);
+            if(rc.canMove(nearestHQ)){
+            	rc.move(nearestHQ);
             }
-            
         }
-        
         //Find Wells
         WellInfo[] nearWell = rc.senseNearbyWells();
         MapLocation nearestWell = nearWell[0].getMapLocation();
