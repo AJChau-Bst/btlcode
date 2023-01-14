@@ -204,6 +204,7 @@ public strictfp class RobotPlayer {
                             }
                         } else if(rc.canMove(dir)) {
                             rc.move(dir);
+                            break;
                         }
                     }
                     
@@ -258,7 +259,6 @@ public strictfp class RobotPlayer {
         }
         //Find Wells
         WellInfo[] nearWell = rc.senseNearbyWells();
-        MapLocation nearestWell = nearWell[0].getMapLocation();
         
         //if adjacent to well, start fucking collecting
         for (int dx = -1; dx <= 1; dx++) {
@@ -276,6 +276,7 @@ public strictfp class RobotPlayer {
 
         //if wells nearby, move to them
         if(nearWell.length >= 1 && total < desiredResourceAmount){
+            MapLocation nearestWell = nearWell[0].getMapLocation();
             Direction dir = rc.getLocation().directionTo(nearestWell);
             if(rc.canMove(dir)){
                 rc.move(dir);
