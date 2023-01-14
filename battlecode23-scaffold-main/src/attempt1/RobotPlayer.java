@@ -176,14 +176,6 @@ public strictfp class RobotPlayer {
         int maAmt = rc.getResourceAmount(ResourceType.MANA);
         int total = elAmt + adAmt + maAmt;
         
-        /*if(rc.getLocation().isAdjacentTo(preciseTarget)){
-                if(rc.canTransferResource(preciseTarget)){
-                    rc.transferResource(preciseTarget, ResourceType.ADAMANTIUM, rc.getResourceAmount(ResourceType.ADAMANTIUM));
-                    rc.transferResource(preciseTarget, ResourceType.MANA, rc.getResourceAmount(ResourceType.MANA));
-                    rc.transferResource(preciseTarget, ResourceType.ELIXIR, rc.getResourceAmount(ResourceType.ELIXIR));
-                }
-        }*/
-        
         if (total >= desiredResourceAmount) {
         	boolean hqSpotted = false;
         	rc.setIndicatorString("Returning to HQ!");
@@ -194,8 +186,23 @@ public strictfp class RobotPlayer {
             	for(RobotInfo bot : friends){
                     if (bot.type == RobotType.HEADQUARTERS){
                     	hqSpotted = true;
-                        Direction dir = me.directionTo(bot.getLocation());
-                        if(rc.canMove(dir)) {
+                        MapLocation preciseTarget = bot.getLocation();
+                        Direction dir = me.directionTo(preciseTarget);
+                        if(me.isAdjacentTo(preciseTarget)){
+                            rc.setIndicatorString("IM CONSTIPATED!!");
+                            if(rc.canTransferResource(preciseTarget, ResourceType.ADAMANTIUM, rc.getResourceAmount(ResourceType.ADAMANTIUM))){
+                                rc.transferResource(preciseTarget, ResourceType.ADAMANTIUM, rc.getResourceAmount(ResourceType.ADAMANTIUM));
+                                rc.setIndicatorString("(A) i think i pooped :(");
+                            }
+                            if(rc.canTransferResource(preciseTarget, ResourceType.MANA, rc.getResourceAmount(ResourceType.MANA))){
+                                rc.transferResource(preciseTarget, ResourceType.MANA, rc.getResourceAmount(ResourceType.MANA));
+                                rc.setIndicatorString("(M) i think i pooped :(");
+                            }
+                            if(rc.canTransferResource(preciseTarget, ResourceType.ELIXIR, rc.getResourceAmount(ResourceType.ELIXIR))){
+                                rc.transferResource(preciseTarget, ResourceType.ELIXIR, rc.getResourceAmount(ResourceType.ELIXIR));
+                                rc.setIndicatorString("(E) i think i pooped :(");
+                            }
+                        } else if(rc.canMove(dir)) {
                             rc.move(dir);
                         }
                     }
