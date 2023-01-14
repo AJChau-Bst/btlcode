@@ -331,4 +331,97 @@ public strictfp class RobotPlayer {
         MapLocation newLoc = new MapLocation(x,y);
         return newLoc;
     }
+<<<<<<< Updated upstream
 }
+=======
+    
+    public static Direction dirSecDir(MapLocation fromLoc, MapLocation toLoc) {
+        if (fromLoc == null) {
+            return null;
+        }
+
+        if (toLoc == null) {
+            return null;
+        }
+
+        double dx = toLoc.x - fromLoc.x;
+        double dy = toLoc.y - fromLoc.y;
+
+        if (Math.abs(dx) >= 2.414 * Math.abs(dy)) {
+            if (dx > 0) {
+                if (dy > 0) {
+                    return Direction.NORTHEAST;
+                } else {
+                    return Direction.SOUTHEAST;
+                }
+            } else if (dx < 0) {
+                 if (dy > 0) {
+                    return Direction.NORTHWEST;
+                } else {
+                    return Direction.SOUTHWEST;
+                }
+            } else {
+                return Direction.CENTER;
+            }
+        } else if (Math.abs(dy) >= 2.414 * Math.abs(dx)) {
+            if (dy > 0) {
+                 if (dx > 0) {
+                    return Direction.NORTHEAST;
+                } else {
+                    return Direction.NORTHWEST;
+                }
+            } else {
+                if (dx > 0) {
+                    return Direction.SOUTHEAST;
+                } else {
+                    return Direction.SOUTHWEST;
+                }
+            }
+        } else {
+            if (dy > 0) {
+                if (dx > 0) {
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        return Direction.EAST;
+                    } else {
+                        return Direction.NORTH;
+                    }
+                } else {
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        return Direction.WEST;
+                    } else {
+                        return Direction.NORTH;
+                    }
+                }
+            } else {
+                if (dx > 0) {
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        return Direction.EAST;
+                    } else {
+                        return Direction.SOUTH;
+                    }
+                } else {
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        return Direction.WEST;
+                    } else {
+                        return Direction.SOUTH;
+                    }
+                }
+            }
+        }
+    }
+
+    public static void mooTwo(RobotController rc, MapLocation loc) {
+        Direction dir = rc.getLocation().directionTo(loc);
+        Direction secDir = dirSecdir(rc.getLocation(), loc);
+        if (rc.canMove(dir)) {
+            rc.move(dir);
+        } else if (rc.canMove(secDir)) {
+            rc.move(secDir);
+        } else if (dir.rotateLeft() == secDir && rc.canMove(dir.rotateRight())) {
+            rc.move(dir.rotateRight());
+        } else if (rc.canMove(dir.rotateLeft())) {
+            rc.move(dir.rotateLeft());
+        } else
+    }
+}
+>>>>>>> Stashed changes
