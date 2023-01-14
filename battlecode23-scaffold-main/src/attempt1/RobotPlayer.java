@@ -78,7 +78,7 @@ public strictfp class RobotPlayer {
                 switch (rc.getType()) {
                     case HEADQUARTERS:     runHeadquarters(rc);  break;
                     case CARRIER:      runCarrier(rc);   break;
-                    //case LAUNCHER: runLauncher(rc); break;
+                    case LAUNCHER: runLauncher(rc); break;
                     case BOOSTER: // Examplefuncsplayer doesn't use any of these robot types below.
                     case DESTABILIZER: // You might want to give them a try!
                     case AMPLIFIER:       break;
@@ -176,48 +176,78 @@ public strictfp class RobotPlayer {
         int maAmt = rc.getResourceAmount(ResourceType.MANA);
         int total = elAmt + adAmt + maAmt;
         
+        /*if(rc.getLocation().isAdjacentTo(preciseTarget)){
+                if(rc.canTransferResource(preciseTarget)){
+                    rc.transferResource(preciseTarget, ResourceType.ADAMANTIUM, rc.getResourceAmount(ResourceType.ADAMANTIUM));
+                    rc.transferResource(preciseTarget, ResourceType.MANA, rc.getResourceAmount(ResourceType.MANA));
+                    rc.transferResource(preciseTarget, ResourceType.ELIXIR, rc.getResourceAmount(ResourceType.ELIXIR));
+                }
+        }*/
+        
         if (total >= desiredResourceAmount) {
-            rc.setIndicatorString("Heading Back");
-            /*//List<int> distanceOFHQ = new ArrayList();
-            int arrayCounter = 0;
-            while(lookingForIndex <= 63){
-                int x = me.distanceSquaredTo(buttToDec(rc.readSharedArray(lookingForIndex), width, height));
-                distanceOfHQ[arrayCounter] = x;
-                lookingForIndex += 1;
-                arrayCounter += 1;
-            }
-            for(int counter = 0; counter < distanceOfHQ.length; ++counter){
-                int smallestNumber = 7201;
-                if(distanceOfHQ[counter] < smallestNumber){
-                    smallestNumber = distanceOfHQ[counter];
-                    idealIndex = counter;
+        	boolean hqSpotted = false;
+        	rc.setIndicatorString("Returning to HQ!");
+        	//if full of resource, scan for nearest HQ and move there. 
+        	Team friendly = rc.getTeam();
+            RobotInfo[] friends = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, friendly);
+            if(friends.length > 0) {
+            	for(RobotInfo bot : friends){
+                    if (bot.type == RobotType.HEADQUARTERS){
+                    	hqSpotted = true;
+                        Direction dir = me.directionTo(bot.getLocation());
+                        if(rc.canMove(dir)) {
+                            rc.move(dir);
+                        }
+                    }
+                    
                 }
             }
-            //int shortestHQID = robotID.get(idealIndex);
-            Direction nearestHQ = me.directionTo(buttToDec(rc.readSharedArray(60+idealIndex),width, height));
-            rc.setIndicatiorString("Going to: " + rc.readSharedArray(60+idealIndex) + "HQ Distance is " + distanceOfHQ.toString());
-            //rc.setIndicatorString("Going to " + rc.readSharedArray(60+idealIndex));
-            if(rc.canMove(nearestHQ)){
-            	rc.move(nearestHQ);
-            }*/
-	        int nearHQidx = 0;
-	        int nearHQdist = 7201;
-	        int dist = 7202;
-	        MapLocation[] hqs = new MapLocation[4];
-	        for(int i = 0; i < 4; ++i) {
-	        	hqs[i] = buttToDec(rc.readSharedArray(63-i), width, height);
-	        	dist = me.distanceSquaredTo(hqs[i]);
-	            if(dist < nearHQdist) {
-	            	nearHQidx = i;
-	            	nearHQdist = dist;
-	            }
-	        }
-	        Direction nearestHQ = me.directionTo(hqs[nearHQidx]);
-            MapLocation targetHQ = hqs[nearHQidx];
-            rc.setIndicatorString("Going to " + hqs[nearHQidx].x + " " + hqs[nearHQidx].y);
-            if(rc.canMove(nearestHQ)){
-            	rc.move(nearestHQ);
-            }
+            
+            
+        	if(hqSpotted == false) {
+        		rc.setIndicatorString("Heading Back");
+                /*//List<int> distanceOFHQ = new ArrayList();
+                int arrayCounter = 0;
+                while(lookingForIndex <= 63){
+                    int x = me.distanceSquaredTo(buttToDec(rc.readSharedArray(lookingForIndex), width, height));
+                    distanceOfHQ[arrayCounter] = x;
+                    lookingForIndex += 1;
+                    arrayCounter += 1;
+                }
+                for(int counter = 0; counter < distanceOfHQ.length; ++counter){
+                    int smallestNumber = 7201;
+                    if(distanceOfHQ[counter] < smallestNumber){
+                        smallestNumber = distanceOfHQ[counter];
+                        idealIndex = counter;
+                    }
+                }
+                //int shortestHQID = robotID.get(idealIndex);
+                Direction nearestHQ = me.directionTo(buttToDec(rc.readSharedArray(60+idealIndex),width, height));
+                rc.setIndicatiorString("Going to: " + rc.readSharedArray(60+idealIndex) + "HQ Distance is " + distanceOfHQ.toString());
+                //rc.setIndicatorString("Going to " + rc.readSharedArray(60+idealIndex));
+                if(rc.canMove(nearestHQ)){
+                	rc.move(nearestHQ);
+                }*/
+    	        int nearHQidx = 0;
+    	        int nearHQdist = 7201;
+    	        int dist = 7202;
+    	        MapLocation[] hqs = new MapLocation[4];
+    	        for(int i = 0; i < 4; ++i) {
+    	        	hqs[i] = buttToDec(rc.readSharedArray(63-i), width, height);
+    	        	dist = me.distanceSquaredTo(hqs[i]);
+    	            if(dist < nearHQdist) {
+    	            	nearHQidx = i;
+    	            	nearHQdist = dist;
+    	            }
+    	        }
+    	        Direction nearestHQ = me.directionTo(hqs[nearHQidx]);
+                //MapLocation targetHQ = hqs[nearHQidx];
+                rc.setIndicatorString("Going to " + hqs[nearHQidx].x + " " + hqs[nearHQidx].y);
+                if(rc.canMove(nearestHQ)){
+                	rc.move(nearestHQ);
+                }
+        	}
+            
         }
         //Find Wells
         WellInfo[] nearWell = rc.senseNearbyWells();
@@ -238,39 +268,22 @@ public strictfp class RobotPlayer {
         }
 
         //if wells nearby, move to them
-        if(nearWell.length >= 1 && total >= desiredResourceAmount){
+        if(nearWell.length >= 1 && total < desiredResourceAmount){
             Direction dir = rc.getLocation().directionTo(nearestWell);
             if(rc.canMove(dir)){
                 rc.move(dir);
             }
         }
 
-        //if at location, scan for nearest HQ and move there. 
-        if(decToButt(me, width, height) == decToButt(targetHQ, width, height) && total = desiredResourceAmount){
-            RobotInfo[] senseNearRobots = new RobotInfo[81];
-            senseNearRobots = rc.senseNearbyRobots();
-            for(int i = 0; i<senseNearRobots.length; i++){
-                if (senseNearRobots[i].RobotInfo.getType() = RobotType.HEADQUARTERS){
-                    MapLocation preciseTarget = senseNearRobots[i].getMapLocation();
-                }
-                Direction precisedir = rc.getLocation().directionTo(preciseTarget);
-                rc.move(precisedir);
-            }
-        }   if(rc.getLocation().isAdjacentTo(preciseTarget)){
-                if(rc.canTransferResource(preciseTarget)){
-                    rc.transferResource(preciseTarget, ResourceType.ADAMANTIUM, rc.getResourceAmount(ResourceType.ADAMANTIUM));
-                    rc.transferResource(preciseTarget, ResourceType.MANA, rc.getResourceAmount(ResourceType.MANA));
-                    rc.transferResource(preciseTarget, ResourceType.ELIXIR, rc.getResourceAmount(ResourceType.ELIXIR));
-                }
-        }
+        
     }
     /**
      * Run a single turn for a Launcher.
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
      */
-    //static void runLauncher(RobotController rc) throws GameActionException {
+    static void runLauncher(RobotController rc) throws GameActionException {
         
-    //}
+    }
 
     public static int decToButt(MapLocation loc, float width, float height){
         int x = loc.x;
