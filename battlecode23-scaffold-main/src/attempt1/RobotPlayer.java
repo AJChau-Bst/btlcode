@@ -119,18 +119,36 @@ public strictfp class RobotPlayer {
         float width = rc.getMapWidth();
         float height = rc.getMapHeight();
 
-                //Find Nearby Wells
+        //Find Nearby Wells
         WellInfo[] nearWell = rc.senseNearbyWells();
         if(nearWell.length > 0) {
         	MapLocation nearestWell = nearWell[0].getMapLocation();
             MapLocation spawnLocation = rc.adjacentLocation(rc.getLocation().directionTo(nearestWell));
-            //Direction targetAdWell = rc.getLocation().directionTo(nearestAdWell);
-            //Build Carriers, if we can build carriers -- NEED TO CHANGE THIS LOGIC/ADD AND CONDITION
-            if(rc.canBuildRobot(RobotType.CARRIER, spawnLocation)){
-                rc.buildRobot(RobotType.CARRIER, spawnLocation);
+        //Direction targetAdWell = rc.getLocation().directionTo(nearestAdWell);
+        //Build Carriers, if we can build carriers -- NEED TO CHANGE THIS LOGIC/ADD AND CONDITION
+        //Get Array of Nearby Robots, Count the NUmber of Carriers
+        int carrierCounter = 0;
+        Team friendly = rc.getTeam();
+        RobotInfo[] friends = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, friendly);
+            if(friends.length > 0) {
+                for(RobotInfo bot : friends){
+                    if (bot.type == RobotType.CARRIER){
+                        carrierCounter = carrierCounter + 1;
+                        }
+                    }
+                }
+            if(carrierCounter <= 2){
+                //System.out.println("Printing Carrier");
+                System.out.println("Printing Carrier, + " + carrierCounter);
+                if(rc.canBuildRobot(RobotType.CARRIER, spawnLocation)){
+                    rc.buildRobot(RobotType.CARRIER, spawnLocation);
+            }
+
+        //if(rc.canBuildRobot(RobotType.CARRIER, spawnLocation)){
+                //rc.buildRobot(RobotType.CARRIER, spawnLocation);
             }
         }
-        
+
         //System.out.println(me.toString());
         //System.out.println(decToButt(me,width,height));
         //rc.setIndicatorString("Trying to write location!" + me);
