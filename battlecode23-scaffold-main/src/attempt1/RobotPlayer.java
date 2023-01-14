@@ -139,7 +139,7 @@ public strictfp class RobotPlayer {
                 }
             if(carrierCounter <= 2){
                 //System.out.println("Printing Carrier");
-                System.out.println("Printing Carrier, + " + carrierCounter);
+                //System.out.println("Printing Carrier, + " + carrierCounter);
                 if(rc.canBuildRobot(RobotType.CARRIER, spawnLocation)){
                     rc.buildRobot(RobotType.CARRIER, spawnLocation);
             }
@@ -220,8 +220,8 @@ public strictfp class RobotPlayer {
                                 rc.transferResource(preciseTarget, ResourceType.ELIXIR, rc.getResourceAmount(ResourceType.ELIXIR));
                                 rc.setIndicatorString("(E) i think i pooped :(");
                             }
-                        } else if(rc.canMove(dir)) {
-                            rc.move(dir);
+                        } else {
+                            mooTwo(rc, preciseTarget);
                             break;
                         }
                     }
@@ -266,12 +266,10 @@ public strictfp class RobotPlayer {
     	            	nearHQdist = dist;
     	            }
     	        }
-    	        Direction nearestHQ = me.directionTo(hqs[nearHQidx]);
+    	        //Direction nearestHQ = me.directionTo(hqs[nearHQidx]);
                 //MapLocation targetHQ = hqs[nearHQidx];
                 rc.setIndicatorString("Going to " + hqs[nearHQidx].x + " " + hqs[nearHQidx].y);
-                if(rc.canMove(nearestHQ)){
-                	rc.move(nearestHQ);
-                }
+                mooTwo(rc, hqs[nearHQidx]);
         	}
             
         }
@@ -294,11 +292,9 @@ public strictfp class RobotPlayer {
 
         //if wells nearby, move to them
         if(nearWell.length >= 1 && total < desiredResourceAmount){
-            MapLocation nearestWell = nearWell[0].getMapLocation();
-            Direction dir = rc.getLocation().directionTo(nearestWell);
-            if(rc.canMove(dir)){
-                rc.move(dir);
-            }
+            MapLocation aWell = nearWell[0].getMapLocation();
+            //Direction dir = rc.getLocation().directionTo(aWell);
+            mooTwo(rc, aWell);
         }
 
         
@@ -331,7 +327,7 @@ public strictfp class RobotPlayer {
         MapLocation newLoc = new MapLocation(x,y);
         return newLoc;
     }
-}
+
     public static Direction dirSecDir(MapLocation fromLoc, MapLocation toLoc) {
         if (fromLoc == null) {
             return null;
@@ -407,17 +403,37 @@ public strictfp class RobotPlayer {
         }
     }
 
-    public static void mooTwo(RobotController rc, MapLocation loc) {
+    public static void mooTwo(RobotController rc, MapLocation loc) throws GameActionException {
         Direction dir = rc.getLocation().directionTo(loc);
-        Direction secDir = dirSecdir(rc.getLocation(), loc);
+        Direction secDir = dirSecDir(rc.getLocation(), loc);
         if (rc.canMove(dir)) {
             rc.move(dir);
         } else if (rc.canMove(secDir)) {
             rc.move(secDir);
-        } else if (dir.rotateLeft() == secDir && rc.canMove(dir.rotateRight())) {
-            rc.move(dir.rotateRight());
-        } else if (rc.canMove(dir.rotateLeft())) {
-            rc.move(dir.rotateLeft());
-        } else
+        } else if (dir.rotateLeft() == secDir) {
+        	if (rc.canMove(dir.rotateRight())) {
+                rc.move(dir.rotateRight());
+        	} else if (rc.canMove(dir.rotateLeft())) {
+        		rc.move(dir.rotateLeft());
+        	} else if (rc.canMove(dir.rotateRight().rotateRight())) {
+                rc.move(dir.rotateRight().rotateRight());
+        	} else if (rc.canMove(dir.rotateLeft().rotateLeft())) {
+        		rc.move(dir.rotateLeft().rotateLeft());
+        	} else if (rc.canMove(dir.rotateRight().rotateRight().rotateRight())) {
+                rc.move(dir.rotateRight().rotateRight().rotateRight());
+        	} else if (rc.canMove(dir.rotateLeft().rotateLeft().rotateLeft())) {
+        		rc.move(dir.rotateLeft().rotateLeft().rotateLeft());
+        	}
+        } else if (rc.canMove(dir.rotateRight())) {
+    		rc.move(dir.rotateRight());
+    	} else if (rc.canMove(dir.rotateLeft().rotateLeft())) {
+            rc.move(dir.rotateLeft().rotateLeft());
+    	} else if (rc.canMove(dir.rotateRight().rotateRight())) {
+    		rc.move(dir.rotateRight().rotateRight());
+    	} else if (rc.canMove(dir.rotateLeft().rotateLeft().rotateLeft())) {
+            rc.move(dir.rotateLeft().rotateLeft().rotateLeft());
+    	} else if (rc.canMove(dir.rotateRight().rotateRight().rotateRight())) {
+    		rc.move(dir.rotateRight().rotateRight().rotateRight());
+    	}
     }
 }
