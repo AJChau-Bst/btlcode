@@ -159,7 +159,7 @@ public strictfp class RobotPlayer {
         //rc.setIndicatorString(buttTranslation + "");
 
         //Adding HQ location to Shared Array using Butt
-        if(rc.readSharedArray(lookingForIndex) == 0){
+        if (rc.readSharedArray(lookingForIndex) == 0){
         	rc.writeSharedArray(lookingForIndex, buttTranslation);
         } else if (rc.readSharedArray(lookingForIndex - 1) == 0){
         	rc.writeSharedArray(lookingForIndex - 1, buttTranslation);
@@ -173,6 +173,18 @@ public strictfp class RobotPlayer {
         MapLocation hqThree = buttToDec(rc.readSharedArray(lookingForIndex-2), width, height);
         MapLocation hqFour = buttToDec(rc.readSharedArray(lookingForIndex-3), width, height);
         rc.setIndicatorString(hqOne.x + " " + hqOne.y + " " + hqTwo.x + " " + hqTwo.y + " " + hqThree.x + " " + hqThree.y + " " + hqFour.x + " " + hqFour.y + " ");
+
+        //When threshold for resources, create an anchor and a carrier, then transfer the anchor to carrier
+/*         if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 500 && rc.getResourceAmount(ResourceType.MANA) >= 500) {
+            if (rc.canBuildAnchor(Anchor.STANDARD)) {
+                rc.buildAnchor(Anchor.STANDARD);
+                rc.buildRobot(RobotType.CARRIER, spawnLocation);
+                if (rc.canTakeAnchor(spawnLocation, Anchor.STANDARD)) {
+                    rc.takeAnchor(spawnLocation, Anchor.STANDARD);
+                    rc.setIndicatorString("I am carrying an anchor!");
+                }
+            }
+        } */
         
     }
 
@@ -327,8 +339,13 @@ public strictfp class RobotPlayer {
         MapLocation newLoc = new MapLocation(x,y);
         return newLoc;
     }
+<<<<<<< Updated upstream
 
     public static Direction dirSecDir(MapLocation fromLoc, MapLocation toLoc) {
+=======
+}
+/*     public static Direction dirSecDir(MapLocation fromLoc, MapLocation toLoc) {
+>>>>>>> Stashed changes
         if (fromLoc == null) {
             return null;
         }
@@ -436,4 +453,4 @@ public strictfp class RobotPlayer {
     		rc.move(dir.rotateRight().rotateRight().rotateRight());
     	}
     }
-}
+} */
