@@ -331,10 +331,7 @@ public strictfp class RobotPlayer {
         MapLocation newLoc = new MapLocation(x,y);
         return newLoc;
     }
-<<<<<<< Updated upstream
 }
-=======
-    
     public static Direction dirSecDir(MapLocation fromLoc, MapLocation toLoc) {
         if (fromLoc == null) {
             return null;
@@ -424,4 +421,3 @@ public strictfp class RobotPlayer {
         } else
     }
 }
->>>>>>> Stashed changes
