@@ -246,11 +246,11 @@ public strictfp class RobotPlayer {
         }
 
         //if at location, scan for nearest HQ and move there. 
-        if(decToButt(me, width, height) == decToButt(targetHQ, width, height)){
+        if(decToButt(me, width, height) == decToButt(targetHQ, width, height) && total = desiredResourceAmount){
             RobotInfo[] senseNearRobots = new RobotInfo[81];
             senseNearRobots = rc.senseNearbyRobots();
             for(int i = 0; i<senseNearRobots.length; i++){
-                if senseNearRobots[i].getType() = RobotType.HEADQUARTERS{
+                if (senseNearRobots[i].RobotInfo.getType() = RobotType.HEADQUARTERS){
                     MapLocation preciseTarget = senseNearRobots[i].getMapLocation();
                 }
                 Direction precisedir = rc.getLocation().directionTo(preciseTarget);
