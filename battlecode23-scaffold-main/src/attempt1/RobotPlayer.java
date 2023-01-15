@@ -411,12 +411,7 @@ public strictfp class RobotPlayer {
         	for (WellInfo aWell : nearWell) {
         		MapLocation wellLoc = aWell.getMapLocation();
         		RobotInfo[] atWell = rc.senseNearbyRobots(wellLoc, 4, friendly);
-        		int crowdSize = 0;
-        		for (RobotInfo robot : atWell) {
-        			if (robot.getType() == RobotType.CARRIER) {
-        				crowdSize++;
-        			}
-        		}
+        		int crowdSize = atWell.length;
         		int wellScore = ((me.distanceSquaredTo(hqs[nearHQidx]) + me.distanceSquaredTo(wellLoc)) * Math.max(1, (int) Math.floor((crowdSize / 2))) ) ;
         		if (wellScore < bestWellScore) {
         			desiredWell = wellLoc;
@@ -459,24 +454,82 @@ public strictfp class RobotPlayer {
         //int centerWidth = Math.round(width/2);
         //MapLocation centerOfMap = new MapLocation(centerWidth, centerWidth);
         //Direction launcherDir = me.directionTo(centerOfMap);
-        //Enemy HQ location calculation
-
+        
+        
+        //Find friendly HQs
+        MapLocation base = new MapLocation(61,61);
+        int baseDist = 7201;
+        boolean hqSpotted = false;
+        Team friendly = rc.getTeam();
+        int friendCount = 0; //oof
+        int wallSize = 0;
+        RobotInfo[] friends = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, friendly);
+        if(friends.length > 0) {
+        	for(RobotInfo bot : friends){
+                if (bot.type == RobotType.HEADQUARTERS){
+                    base = bot.getLocation(); 
+                    baseDist = me.distanceSquaredTo(base);
+                	hqSpotted = true;
+                } else if (bot.type == RobotType.LAUNCHER) { //Count friendly army
+                	friendCount++;
+                	if (me.isAdjacentTo(bot.location)) {
+                		wallSize++;
+                	}
+                } else if (bot.type == RobotType.BOOSTER) {
+                	friendCount+=3;
+                	if (me.isAdjacentTo(bot.location)) {
+                		wallSize++;
+                	}
+                } else if (bot.type == RobotType.DESTABILIZER) {
+                	friendCount+=4;
+                	if (me.isAdjacentTo(bot.location)) {
+                		wallSize++;
+                	}
+                }
+        	}
+        }
+        
+        //Scan for enemy HQ crowding
+        MapLocation enemyHQ = new MapLocation(61,61);
+        Team enemy = rc.getTeam().opponent();
+        int crowd = 0;
+        RobotInfo[] enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, enemy);
+        if(enemies.length > 0) {
+        	for(RobotInfo bot : enemies){
+                if (bot.type == RobotType.HEADQUARTERS){
+                	enemyHQ = bot.getLocation(); 
+                }
+        	}
+    		crowd = rc.senseNearbyRobots(enemyHQ, 4, friendly).length;
+        }
+        
+        //Friendly and enemy HQ location calculation
         int nearHQidx = 0;
         int nearHQdist = 7201;
         int dist = 7202;
+        int nearEnemyHQidx = 0;
+        int farEnemyHQidx = 0;
+        int nearEnemyHQdist = 7201;
+        int distEnemy = 7202;
+        MapLocation[] hqs = new MapLocation[4];
         MapLocation[] enemyHQs = new MapLocation[4];
         for(int i = 0; i < 4; ++i) {
-            MapLocation friendlyHQ = buttToDec(rc.readSharedArray(63-i), width, height);
-            enemyHQs[i] = findEnemyHQ(friendlyHQ, width, height);
-            dist = me.distanceSquaredTo(enemyHQs[i]);
+        	hqs[i] = buttToDec(rc.readSharedArray(63-i), width, height);
+        	dist = me.distanceSquaredTo(hqs[i]);
             if(dist < nearHQdist) {
-                nearHQidx = i;
-                nearHQdist = dist;
+            	nearHQidx = i;
+            	nearHQdist = dist;
+            }
+            enemyHQs[i] = findSymmetric(hqs[i], width, height);
+            distEnemy = me.distanceSquaredTo(enemyHQs[i]);
+            if(distEnemy < nearEnemyHQdist) {
+            	farEnemyHQidx = nearEnemyHQidx;
+            	nearEnemyHQidx = i;
+            	nearEnemyHQdist = distEnemy;
             }
         }
+        
         //if see enemy, shoot
-        Team opponent = rc.getTeam().opponent();
-        RobotInfo[] enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, opponent);
         if (enemies.length > 0){
             for(RobotInfo bot : enemies) {
                 if(bot.type == RobotType.DESTABILIZER){
@@ -497,13 +550,41 @@ public strictfp class RobotPlayer {
                 }
             }
             for(RobotInfo bot : enemies) {
-            	fireZeLaser(rc, bot.location);
-                rc.setIndicatorString("Attacking a civilian!");
+            	if(bot.type != RobotType.HEADQUARTERS) {
+                	fireZeLaser(rc, bot.location);
+                    rc.setIndicatorString("Attacking a civilian!");
+                }
             }
-        } else {
-            rc.setIndicatorString("Marching to enemy HQ! " + enemyHQs[nearHQidx].x + " " + enemyHQs[nearHQidx].y);
         }
-        mooTwo(rc, enemyHQs[nearHQidx]);
+        WellInfo[] nearWell = rc.senseNearbyWells(4);
+        if (hqSpotted) {
+        	if (me.isAdjacentTo(base)) {
+        		mooTwo(rc, enemyHQs[nearEnemyHQidx]);
+        	} else if(wallSize >= 3) {
+        		mooTwo(rc, enemyHQs[nearEnemyHQidx]);
+        	} else if(nearWell.length > 0) {
+        		mooTwo(rc, enemyHQs[nearEnemyHQidx]);
+        	} else if (friendCount > 5) {
+                mooTwo(rc, enemyHQs[nearEnemyHQidx]);
+                rc.setIndicatorString("Marching to enemy HQ! " + enemyHQs[nearEnemyHQidx].x + " " + enemyHQs[nearEnemyHQidx].y);
+        	}
+        } else {
+        	if (friendCount >= 2) {
+        		if (crowd <= 2) {
+            		mooTwo(rc, enemyHQs[nearEnemyHQidx]);
+            		rc.setIndicatorString("Marching to enemy HQ! " + enemyHQs[nearEnemyHQidx].x + " " + enemyHQs[nearEnemyHQidx].y);
+        		} else if(nearEnemyHQidx == farEnemyHQidx) { 
+        			mooTwo(rc, hqs[nearHQidx]);
+            		rc.setIndicatorString("Returning to HQ! " + hqs[nearHQidx].x + " " + hqs[nearHQidx].y);
+        		} else {
+        			mooTwo(rc, enemyHQs[farEnemyHQidx]);
+            		rc.setIndicatorString("Marching to new enemy HQ! " + enemyHQs[farEnemyHQidx].x + " " + enemyHQs[farEnemyHQidx].y);
+        		}
+        	} else {
+        		mooTwo(rc, hqs[nearHQidx]);
+        		rc.setIndicatorString("Returning to HQ! " + hqs[nearHQidx].x + " " + hqs[nearHQidx].y);
+        	}
+        }
         /*rc.setIndicatorString("Moving to center of map - " + centerOfMap.toString());
         if(me.equals(centerOfMap) || me.isAdjacentTo(centerOfMap)){
             mooTwo(rc, enemyHQs[nearHQidx]);
@@ -511,11 +592,7 @@ public strictfp class RobotPlayer {
         }*/
     }
 
-
-        //Otherwise, move towards the middle of the map
-        //then, move towards enemy HQ if nothing 
-
-    public static MapLocation findEnemyHQ(MapLocation map, int width, int height){
+    public static MapLocation findSymmetric(MapLocation map, int width, int height){
         int x = map.x;
         int y = map.y;
         int halfwidth = (int)Math.round(width*.5);
@@ -646,27 +723,25 @@ public strictfp class RobotPlayer {
         } else if (dir.rotateLeft() == secDir) {
         	if (rc.canMove(dir.rotateRight())) {
                 rc.move(dir.rotateRight());
-        	} else if (rc.canMove(dir.rotateLeft())) {
-        		rc.move(dir.rotateLeft());
-        	} else if (rc.canMove(dir.rotateRight().rotateRight())) {
-                rc.move(dir.rotateRight().rotateRight());
         	} else if (rc.canMove(dir.rotateLeft().rotateLeft())) {
         		rc.move(dir.rotateLeft().rotateLeft());
-        	} else if (rc.canMove(dir.rotateRight().rotateRight().rotateRight())) {
-                rc.move(dir.rotateRight().rotateRight().rotateRight());
+        	} else if (rc.canMove(dir.rotateRight().rotateRight())) {
+                rc.move(dir.rotateRight().rotateRight());
         	} else if (rc.canMove(dir.rotateLeft().rotateLeft().rotateLeft())) {
         		rc.move(dir.rotateLeft().rotateLeft().rotateLeft());
+        	} else if (rc.canMove(dir.rotateRight().rotateRight().rotateRight())) {
+                rc.move(dir.rotateRight().rotateRight().rotateRight());
         	}
-        } else if (rc.canMove(dir.rotateRight())) {
-    		rc.move(dir.rotateRight());
-    	} else if (rc.canMove(dir.rotateLeft().rotateLeft())) {
-            rc.move(dir.rotateLeft().rotateLeft());
+        } else if (rc.canMove(dir.rotateLeft())) {
+    		rc.move(dir.rotateLeft());
     	} else if (rc.canMove(dir.rotateRight().rotateRight())) {
-    		rc.move(dir.rotateRight().rotateRight());
-    	} else if (rc.canMove(dir.rotateLeft().rotateLeft().rotateLeft())) {
-            rc.move(dir.rotateLeft().rotateLeft().rotateLeft());
+            rc.move(dir.rotateRight().rotateRight());
+    	} else if (rc.canMove(dir.rotateLeft().rotateLeft())) {
+    		rc.move(dir.rotateLeft().rotateLeft());
     	} else if (rc.canMove(dir.rotateRight().rotateRight().rotateRight())) {
     		rc.move(dir.rotateRight().rotateRight().rotateRight());
+    	} else if (rc.canMove(dir.rotateLeft().rotateLeft().rotateLeft())) {
+            rc.move(dir.rotateLeft().rotateLeft().rotateLeft());
     	}
     }
     
