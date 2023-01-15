@@ -148,7 +148,7 @@ public strictfp class RobotPlayer {
                     }
                 }
             ///***ADJUST NUMBER OF CARRIERS HERE***///
-            if(carrierCounter <= 7){
+            if(carrierCounter <= 8){
                 //System.out.println("Printing Carrier");
                 //System.out.println("Printing Carrier, + " + carrierCounter);
                 if(rc.canBuildRobot(RobotType.CARRIER, spawnLocation)){
