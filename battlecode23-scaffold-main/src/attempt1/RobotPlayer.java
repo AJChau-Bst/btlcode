@@ -239,9 +239,9 @@ public strictfp class RobotPlayer {
         }
         
         if (total > 0) {
-        	rc.setIndicatorString("Returning to HQ!");
         	//if full of resource, scan for nearest HQ and move there.
         	if (rc.onTheMap(preciseTarget)) {
+            	rc.setIndicatorString("Returning to HQ!" + preciseTarget.x + " " + preciseTarget.y);
         		if(me.isAdjacentTo(preciseTarget)){
                     rc.setIndicatorString("IM CONSTIPATED!!");
                     if(rc.canTransferResource(preciseTarget, ResourceType.ADAMANTIUM, rc.getResourceAmount(ResourceType.ADAMANTIUM))){
@@ -267,55 +267,38 @@ public strictfp class RobotPlayer {
 		                    }
 		                }
 		            }
-		        	if(hqSpotted == false) {
-		        		rc.setIndicatorString("Heading Back");
-		                /*//List<int> distanceOFHQ = new ArrayList();
-		                int arrayCounter = 0;
-		                while(lookingForIndex <= 63){
-		                    int x = me.distanceSquaredTo(buttToDec(rc.readSharedArray(lookingForIndex), width, height));
-		                    distanceOfHQ[arrayCounter] = x;
-		                    lookingForIndex += 1;
-		                    arrayCounter += 1;
-		                }
-		                for(int counter = 0; counter < distanceOfHQ.length; ++counter){
-		                    int smallestNumber = 7201;
-		                    if(distanceOfHQ[counter] < smallestNumber){
-		                        smallestNumber = distanceOfHQ[counter];
-		                        idealIndex = counter;
-		                    }
-		                }
-		                //int shortestHQID = robotID.get(idealIndex);
-		                Direction nearestHQ = me.directionTo(buttToDec(rc.readSharedArray(60+idealIndex),width, height));
-		                rc.setIndicatiorString("Going to: " + rc.readSharedArray(60+idealIndex) + "HQ Distance is " + distanceOfHQ.toString());
-		                //rc.setIndicatorString("Going to " + rc.readSharedArray(60+idealIndex));
-		                if(rc.canMove(nearestHQ)){
-		                	rc.move(nearestHQ);
-		                }*/
-		    	        int nearHQidx = 0;
-		    	        int nearHQdist = 7201;
-		    	        int dist = 7202;
-		    	        MapLocation[] hqs = new MapLocation[4];
-		    	        for(int i = 0; i < 4; ++i) {
-		    	        	hqs[i] = buttToDec(rc.readSharedArray(63-i), width, height);
-		    	        	dist = me.distanceSquaredTo(hqs[i]);
-		    	            if(dist < nearHQdist) {
-		    	            	nearHQidx = i;
-		    	            	nearHQdist = dist;
-		    	            }
-		    	        }
-		    	        //Direction nearestHQ = me.directionTo(hqs[nearHQidx]);
-		                //MapLocation targetHQ = hqs[nearHQidx];
-		                rc.setIndicatorString("Going to " + hqs[nearHQidx].x + " " + hqs[nearHQidx].y);
-		                mooTwo(rc, hqs[nearHQidx]);
-		        	}
-		            
-		        }
+                }
         	}
+        	if (total >= desiredResourceAmount) {	
+	        	if(hqSpotted == false) {
+	        		rc.setIndicatorString("Heading back, approximately");
+	    	        int nearHQidx = 0;
+	    	        int nearHQdist = 7201;
+	    	        int dist = 7202;
+	    	        MapLocation[] hqs = new MapLocation[4];
+	    	        for(int i = 0; i < 4; ++i) {
+	    	        	hqs[i] = buttToDec(rc.readSharedArray(63-i), width, height);
+	    	        	dist = me.distanceSquaredTo(hqs[i]);
+	    	            if(dist < nearHQdist) {
+	    	            	nearHQidx = i;
+	    	            	nearHQdist = dist;
+	    	            }
+	    	        }
+	    	        //Direction nearestHQ = me.directionTo(hqs[nearHQidx]);
+	                //MapLocation targetHQ = hqs[nearHQidx];
+	                rc.setIndicatorString("Going to " + hqs[nearHQidx].x + " " + hqs[nearHQidx].y);
+	                mooTwo(rc, hqs[nearHQidx]);
+	        	}
+    		}
         } else if (rc.getAnchor() == null) {
         	if (rc.canSenseLocation(preciseTarget)) {
         		if (rc.senseRobotAtLocation(preciseTarget).getTotalAnchors() > 0) {
-        			if (me.isAdjacentTo(preciseTarget)) {
-        				
+        			if (rc.canTakeAnchor(preciseTarget, Anchor.ACCELERATING)) {
+        				rc.takeAnchor(preciseTarget, Anchor.ACCELERATING);
+        			} else if (rc.canTakeAnchor(preciseTarget, Anchor.STANDARD)) {
+        				rc.takeAnchor(preciseTarget, Anchor.STANDARD);
+        			} else {
+        				mooTwo(rc, preciseTarget);
         			}
         		}
         	}
