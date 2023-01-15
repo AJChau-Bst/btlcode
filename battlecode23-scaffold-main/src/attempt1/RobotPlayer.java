@@ -173,7 +173,7 @@ public strictfp class RobotPlayer {
         MapLocation hqThree = buttToDec(rc.readSharedArray(lookingForIndex-2), width, height);
         MapLocation hqFour = buttToDec(rc.readSharedArray(lookingForIndex-3), width, height);
         rc.setIndicatorString(hqOne.x + " " + hqOne.y + " " + hqTwo.x + " " + hqTwo.y + " " + hqThree.x + " " + hqThree.y + " " + hqFour.x + " " + hqFour.y + " ");
-
+        
         //When threshold for resources, create an anchor and a carrier, then transfer the anchor to carrier
 /*         if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 500 && rc.getResourceAmount(ResourceType.MANA) >= 500) {
             if (rc.canBuildAnchor(Anchor.STANDARD)) {
@@ -186,12 +186,25 @@ public strictfp class RobotPlayer {
             }
         } */
 
-        //Spawn Launcher Code
+        /*//Spawn Launcher Code
         if (rc.canBuildRobot(RobotType.Launcher,spawnLocation)){
             rc.buildRobot(RobotType.Launcher, spawnLocation);
-        }
+        }*/
         
-    }
+    
+        //When threshold for resources, create an anchor
+        if (rc.senseRobotAtLocation(me).getTotalAnchors() == 0) {
+        	if (rc.getResourceAmount(ResourceType.ELIXIR) >= 1000) {
+        		if (rc.canBuildAnchor(Anchor.ACCELERATING)) {
+        			rc.buildAnchor(Anchor.ACCELERATING);
+        		}
+        	} else if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 600 && rc.getResourceAmount(ResourceType.MANA) >= 600) {
+        		if (rc.canBuildAnchor(Anchor.STANDARD)) {
+	                rc.buildAnchor(Anchor.STANDARD);
+	        	}
+	     	} 
+	    }
+	}
 
     /**
      * Run a single turn for a Carrier.
@@ -203,7 +216,7 @@ public strictfp class RobotPlayer {
         float height = rc.getMapHeight();
         MapLocation me = rc.getLocation();
         int desiredResourceAmount = 40;
-        
+    	boolean hqSpotted = false;
         
         //If Robot is full, go to the closest HQ to deposit.
         int elAmt = rc.getResourceAmount(ResourceType.ELIXIR);
@@ -211,84 +224,101 @@ public strictfp class RobotPlayer {
         int maAmt = rc.getResourceAmount(ResourceType.MANA);
         int total = elAmt + adAmt + maAmt;
         
-        if (total >= desiredResourceAmount) {
-        	boolean hqSpotted = false;
-        	rc.setIndicatorString("Returning to HQ!");
-        	//if full of resource, scan for nearest HQ and move there. 
-        	Team friendly = rc.getTeam();
-            RobotInfo[] friends = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, friendly);
-            if(friends.length > 0) {
-            	for(RobotInfo bot : friends){
-                    if (bot.type == RobotType.HEADQUARTERS){
-                    	hqSpotted = true;
-                        MapLocation preciseTarget = bot.getLocation();
-                        Direction dir = me.directionTo(preciseTarget);
-                        if(me.isAdjacentTo(preciseTarget)){
-                            rc.setIndicatorString("IM CONSTIPATED!!");
-                            if(rc.canTransferResource(preciseTarget, ResourceType.ADAMANTIUM, rc.getResourceAmount(ResourceType.ADAMANTIUM))){
-                                rc.transferResource(preciseTarget, ResourceType.ADAMANTIUM, rc.getResourceAmount(ResourceType.ADAMANTIUM));
-                                rc.setIndicatorString("(A) i think i pooped :(");
-                            }
-                            if(rc.canTransferResource(preciseTarget, ResourceType.MANA, rc.getResourceAmount(ResourceType.MANA))){
-                                rc.transferResource(preciseTarget, ResourceType.MANA, rc.getResourceAmount(ResourceType.MANA));
-                                rc.setIndicatorString("(M) i think i pooped :(");
-                            }
-                            if(rc.canTransferResource(preciseTarget, ResourceType.ELIXIR, rc.getResourceAmount(ResourceType.ELIXIR))){
-                                rc.transferResource(preciseTarget, ResourceType.ELIXIR, rc.getResourceAmount(ResourceType.ELIXIR));
-                                rc.setIndicatorString("(E) i think i pooped :(");
-                            }
-                        } else {
-                            mooTwo(rc, preciseTarget);
-                            break;
-                        }
-                    }
-                    
+        MapLocation preciseTarget = new MapLocation(61,61);
+        
+        Team friendly = rc.getTeam();
+        RobotInfo[] friends = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, friendly);
+        if(friends.length > 0) {
+        	for(RobotInfo bot : friends){
+                if (bot.type == RobotType.HEADQUARTERS){
+                    preciseTarget = bot.getLocation(); 
+                	hqSpotted = true;
+                    break;
                 }
-            }
-            
-            
-        	if(hqSpotted == false) {
-        		rc.setIndicatorString("Heading Back");
-                /*//List<int> distanceOFHQ = new ArrayList();
-                int arrayCounter = 0;
-                while(lookingForIndex <= 63){
-                    int x = me.distanceSquaredTo(buttToDec(rc.readSharedArray(lookingForIndex), width, height));
-                    distanceOfHQ[arrayCounter] = x;
-                    lookingForIndex += 1;
-                    arrayCounter += 1;
-                }
-                for(int counter = 0; counter < distanceOfHQ.length; ++counter){
-                    int smallestNumber = 7201;
-                    if(distanceOfHQ[counter] < smallestNumber){
-                        smallestNumber = distanceOfHQ[counter];
-                        idealIndex = counter;
-                    }
-                }
-                //int shortestHQID = robotID.get(idealIndex);
-                Direction nearestHQ = me.directionTo(buttToDec(rc.readSharedArray(60+idealIndex),width, height));
-                rc.setIndicatiorString("Going to: " + rc.readSharedArray(60+idealIndex) + "HQ Distance is " + distanceOfHQ.toString());
-                //rc.setIndicatorString("Going to " + rc.readSharedArray(60+idealIndex));
-                if(rc.canMove(nearestHQ)){
-                	rc.move(nearestHQ);
-                }*/
-    	        int nearHQidx = 0;
-    	        int nearHQdist = 7201;
-    	        int dist = 7202;
-    	        MapLocation[] hqs = new MapLocation[4];
-    	        for(int i = 0; i < 4; ++i) {
-    	        	hqs[i] = buttToDec(rc.readSharedArray(63-i), width, height);
-    	        	dist = me.distanceSquaredTo(hqs[i]);
-    	            if(dist < nearHQdist) {
-    	            	nearHQidx = i;
-    	            	nearHQdist = dist;
-    	            }
-    	        }
-    	        //Direction nearestHQ = me.directionTo(hqs[nearHQidx]);
-                //MapLocation targetHQ = hqs[nearHQidx];
-                rc.setIndicatorString("Going to " + hqs[nearHQidx].x + " " + hqs[nearHQidx].y);
-                mooTwo(rc, hqs[nearHQidx]);
         	}
-            
+        }
+        
+        if (total > 0) {
+        	rc.setIndicatorString("Returning to HQ!");
+        	//if full of resource, scan for nearest HQ and move there.
+        	if (rc.onTheMap(preciseTarget)) {
+        		if(me.isAdjacentTo(preciseTarget)){
+                    rc.setIndicatorString("IM CONSTIPATED!!");
+                    if(rc.canTransferResource(preciseTarget, ResourceType.ADAMANTIUM, rc.getResourceAmount(ResourceType.ADAMANTIUM))){
+                        rc.transferResource(preciseTarget, ResourceType.ADAMANTIUM, rc.getResourceAmount(ResourceType.ADAMANTIUM));
+                        rc.setIndicatorString("(A) i think i pooped :(");
+                    }
+                    if(rc.canTransferResource(preciseTarget, ResourceType.MANA, rc.getResourceAmount(ResourceType.MANA))){
+                        rc.transferResource(preciseTarget, ResourceType.MANA, rc.getResourceAmount(ResourceType.MANA));
+                        rc.setIndicatorString("(M) i think i pooped :(");
+                    }
+                    if(rc.canTransferResource(preciseTarget, ResourceType.ELIXIR, rc.getResourceAmount(ResourceType.ELIXIR))){
+                        rc.transferResource(preciseTarget, ResourceType.ELIXIR, rc.getResourceAmount(ResourceType.ELIXIR));
+                        rc.setIndicatorString("(E) i think i pooped :(");
+                    }
+                } else if (total >= desiredResourceAmount) {
+		        	if(friends.length > 0) {
+		            	for(RobotInfo bot : friends){
+		                    if (bot.type == RobotType.HEADQUARTERS){
+		                    	preciseTarget = bot.getLocation();
+		                        //Direction dir = me.directionTo(preciseTarget);
+		                        mooTwo(rc, preciseTarget);
+		                        break;
+		                    }
+		                }
+		            }
+		        	if(hqSpotted == false) {
+		        		rc.setIndicatorString("Heading Back");
+		                /*//List<int> distanceOFHQ = new ArrayList();
+		                int arrayCounter = 0;
+		                while(lookingForIndex <= 63){
+		                    int x = me.distanceSquaredTo(buttToDec(rc.readSharedArray(lookingForIndex), width, height));
+		                    distanceOfHQ[arrayCounter] = x;
+		                    lookingForIndex += 1;
+		                    arrayCounter += 1;
+		                }
+		                for(int counter = 0; counter < distanceOfHQ.length; ++counter){
+		                    int smallestNumber = 7201;
+		                    if(distanceOfHQ[counter] < smallestNumber){
+		                        smallestNumber = distanceOfHQ[counter];
+		                        idealIndex = counter;
+		                    }
+		                }
+		                //int shortestHQID = robotID.get(idealIndex);
+		                Direction nearestHQ = me.directionTo(buttToDec(rc.readSharedArray(60+idealIndex),width, height));
+		                rc.setIndicatiorString("Going to: " + rc.readSharedArray(60+idealIndex) + "HQ Distance is " + distanceOfHQ.toString());
+		                //rc.setIndicatorString("Going to " + rc.readSharedArray(60+idealIndex));
+		                if(rc.canMove(nearestHQ)){
+		                	rc.move(nearestHQ);
+		                }*/
+		    	        int nearHQidx = 0;
+		    	        int nearHQdist = 7201;
+		    	        int dist = 7202;
+		    	        MapLocation[] hqs = new MapLocation[4];
+		    	        for(int i = 0; i < 4; ++i) {
+		    	        	hqs[i] = buttToDec(rc.readSharedArray(63-i), width, height);
+		    	        	dist = me.distanceSquaredTo(hqs[i]);
+		    	            if(dist < nearHQdist) {
+		    	            	nearHQidx = i;
+		    	            	nearHQdist = dist;
+		    	            }
+		    	        }
+		    	        //Direction nearestHQ = me.directionTo(hqs[nearHQidx]);
+		                //MapLocation targetHQ = hqs[nearHQidx];
+		                rc.setIndicatorString("Going to " + hqs[nearHQidx].x + " " + hqs[nearHQidx].y);
+		                mooTwo(rc, hqs[nearHQidx]);
+		        	}
+		            
+		        }
+        	}
+        } else if (rc.getAnchor() == null) {
+        	if (rc.canSenseLocation(preciseTarget)) {
+        		if (rc.senseRobotAtLocation(preciseTarget).getTotalAnchors() > 0) {
+        			if (me.isAdjacentTo(preciseTarget)) {
+        				
+        			}
+        		}
+        	}
         }
         //Find Wells
         WellInfo[] nearWell = rc.senseNearbyWells();
@@ -321,7 +351,7 @@ public strictfp class RobotPlayer {
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
      */
     static void runLauncher(RobotController rc) throws GameActionException {
-        //if see enemy, shoot
+        /*//if see enemy, shoot
         Team opponent = rc.opponent();
         RobotInfo[] enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, opponent);
         if (enemies.length > 0){
@@ -339,7 +369,7 @@ public strictfp class RobotPlayer {
 
         //Otherwise, move towards the middle of the map
         //then, move towards enemy HQ if nothing
-        
+        */
     }
 
     public static int decToButt(MapLocation loc, float width, float height){
@@ -362,13 +392,8 @@ public strictfp class RobotPlayer {
         MapLocation newLoc = new MapLocation(x,y);
         return newLoc;
     }
-<<<<<<< Updated upstream
 
-    public static Direction dirSecDir(MapLocation fromLoc, MapLocation toLoc) {
-=======
-}
-/*     public static Direction dirSecDir(MapLocation fromLoc, MapLocation toLoc) {
->>>>>>> Stashed changes
+     public static Direction dirSecDir(MapLocation fromLoc, MapLocation toLoc) {
         if (fromLoc == null) {
             return null;
         }
@@ -476,4 +501,4 @@ public strictfp class RobotPlayer {
     		rc.move(dir.rotateRight().rotateRight().rotateRight());
     	}
     }
-} */
+} 
