@@ -118,6 +118,7 @@ public strictfp class RobotPlayer {
         MapLocation me = rc.getLocation();
         float width = rc.getMapWidth();
         float height = rc.getMapHeight();
+        
 
         //Find Nearby Wells
         WellInfo[] nearWell = rc.senseNearbyWells();
@@ -186,10 +187,14 @@ public strictfp class RobotPlayer {
             }
         } */
 
-        /*//Spawn Launcher Code
-        if (rc.canBuildRobot(RobotType.Launcher,spawnLocation)){
-            rc.buildRobot(RobotType.Launcher, spawnLocation);
-        }*/
+         //Spawn Launcher Code
+        int centerWidth = Math.round(width/2);
+        MapLocation centerOfMap = new MapLocation(centerWidth, centerWidth);
+        Direction launcherDir = me.directionTo(centerOfMap);
+        MapLocation launcherSpawn = rc.getLocation().add(launcherDir);
+        if (rc.canBuildRobot(RobotType.LAUNCHER,launcherSpawn)){
+            rc.buildRobot(RobotType.LAUNCHER, launcherSpawn);
+        }
         
     
         //When threshold for resources, create an anchor
@@ -372,28 +377,76 @@ public strictfp class RobotPlayer {
      * Run a single turn for a Launcher.
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
      */
-    static void runLauncher(RobotController rc) throws GameActionException {
-        /*//if see enemy, shoot
-        Team opponent = rc.opponent();
+     static void runLauncher(RobotController rc) throws GameActionException {
+        int width = rc.getMapWidth();
+        MapLocation me = rc.getLocation();
+        //move to center
+        int centerWidth = Math.round(width/2);
+        MapLocation centerOfMap = new MapLocation(centerWidth, centerWidth);
+        Direction launcherDir = me.directionTo(centerOfMap);
+        //Enemy HQ location calculation
+
+        int nearHQidx = 0;
+        int nearHQdist = 7201;
+        int dist = 7202;
+        MapLocation[] enemyHQs = new MapLocation[4];
+        for(int i = 0; i < 4; ++i) {
+            enemyHQs[i] = buttToDec(rc.readSharedArray(63-i), width, width);
+            dist = me.distanceSquaredTo(enemyHQs[i]);
+            if(dist < nearHQdist) {
+                nearHQidx = i;
+                nearHQdist = dist;
+            }
+        }
+        //if see enemy, shoot
+        Team opponent = rc.getTeam().opponent();
         RobotInfo[] enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, opponent);
         if (enemies.length > 0){
-            for(RobotInfo bot : friends){
+            rc.setIndicatorString("I see an enemy!");
+            for(RobotInfo bot : enemies){
                 if(bot.type == RobotType.LAUNCHER){
                     if(rc.canAttack(bot.location)){
-                        rc.attack(bot.location)
+                        rc.attack(bot.location);
                     } else {
-                        rc.move(mootoo(bot.location));
+                        mooTwo(rc, bot.location);
+                    }
+                } else{
+                    if(rc.canAttack(bot.location)){
+                        rc.attack(bot.location);
+                    } else {
+                        mooTwo(rc, bot.location);
                     }
                 }
             }
+
+        mooTwo(rc, centerOfMap);
+        rc.setIndicatorString("Moving to center of map - " + centerOfMap.toString());
+        if(me.equals(centerOfMap) || me.isAdjacentTo(centerOfMap)){
+            mooTwo(rc, enemyHQs[nearHQidx]);
+            rc.setIndicatorString("Moving to enemy HQ - " + enemyHQs[nearHQidx]);
         }
+    }
 
 
         //Otherwise, move towards the middle of the map
         //then, move towards enemy HQ if nothing
-        */
-    }
+    } 
 
+    public static MapLocation findEnemyHQ(MapLocation map, int width){
+        int x = map.x;
+        int y = map.y;
+        int halfwidth = (int)Math.round(width*.5);
+
+        x = x - halfwidth;
+        y = y - halfwidth;
+        x = x * -1;
+        y = y * -1;
+        x = x + halfwidth;
+        y = y + halfwidth;
+        MapLocation enemyHQ = new MapLocation(x,y);
+        return enemyHQ;
+
+    }
     public static int decToButt(MapLocation loc, float width, float height){
         int x = loc.x;
         int y = loc.y;
