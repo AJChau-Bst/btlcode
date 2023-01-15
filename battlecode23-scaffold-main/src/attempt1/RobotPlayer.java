@@ -118,8 +118,17 @@ public strictfp class RobotPlayer {
         MapLocation me = rc.getLocation();
         float width = rc.getMapWidth();
         float height = rc.getMapHeight();
-        
 
+        //Spawn Launcher Code
+        int centerWidth = Math.round(width/2);
+        MapLocation centerOfMap = new MapLocation(centerWidth, centerWidth);
+        Direction launcherDir = me.directionTo(centerOfMap);
+        MapLocation launcherSpawn = rc.getLocation().add(launcherDir);
+        if(/*rc.getResourceAmount(ResourceType.MANA) >= 100 && rng.nextInt(4) != 4*/true) {
+        	if (rc.canBuildRobot(RobotType.LAUNCHER,launcherSpawn)){
+                rc.buildRobot(RobotType.LAUNCHER, launcherSpawn);
+            }
+        }
         //Find Nearby Wells
         WellInfo[] nearWell = rc.senseNearbyWells();
         if(nearWell.length > 0) {
@@ -139,16 +148,13 @@ public strictfp class RobotPlayer {
                     }
                 }
             ///***ADJUST NUMBER OF CARRIERS HERE***///
-            if(carrierCounter <= 6){
+            if(carrierCounter <= 7){
                 //System.out.println("Printing Carrier");
                 //System.out.println("Printing Carrier, + " + carrierCounter);
                 if(rc.canBuildRobot(RobotType.CARRIER, spawnLocation)){
                     rc.buildRobot(RobotType.CARRIER, spawnLocation);
                     rc.setIndicatorString("Building a carrier!");
-            }
-
-        //if(rc.canBuildRobot(RobotType.CARRIER, spawnLocation)){
-                //rc.buildRobot(RobotType.CARRIER, spawnLocation);
+                }
             }
         }
 
@@ -180,43 +186,20 @@ public strictfp class RobotPlayer {
         MapLocation hqThree = buttToDec(rc.readSharedArray(lookingForIndex-2), width, height);
         MapLocation hqFour = buttToDec(rc.readSharedArray(lookingForIndex-3), width, height);
         //rc.setIndicatorString(hqOne.x + " " + hqOne.y + " " + hqTwo.x + " " + hqTwo.y + " " + hqThree.x + " " + hqThree.y + " " + hqFour.x + " " + hqFour.y + " ");*/
-        
-        //When threshold for resources, create an anchor and a carrier, then transfer the anchor to carrier
-/*         if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 500 && rc.getResourceAmount(ResourceType.MANA) >= 500) {
-            if (rc.canBuildAnchor(Anchor.STANDARD)) {
-                rc.buildAnchor(Anchor.STANDARD);
-                rc.buildRobot(RobotType.CARRIER, spawnLocation);
-                if (rc.canTakeAnchor(spawnLocation, Anchor.STANDARD)) {
-                    rc.takeAnchor(spawnLocation, Anchor.STANDARD);
-                    rc.setIndicatorString("I am carrying an anchor!");
-                }
-            }
-        } */
 
-         //Spawn Launcher Code
-        int centerWidth = Math.round(width/2);
-        MapLocation centerOfMap = new MapLocation(centerWidth, centerWidth);
-        Direction launcherDir = me.directionTo(centerOfMap);
-        MapLocation launcherSpawn = rc.getLocation().add(launcherDir);
-        if(rc.getResourceAmount(ResourceType.MANA) >= 100 && rng.nextInt(4) != 4)
-            if (rc.canBuildRobot(RobotType.LAUNCHER,launcherSpawn)){
-                rc.buildRobot(RobotType.LAUNCHER, launcherSpawn);
-            }
-        
-    
         //When threshold for resources, create an anchor
         if (rc.senseRobotAtLocation(me).getTotalAnchors() == 0) {
-        	if (rc.getResourceAmount(ResourceType.ELIXIR) >= 1000) {
+        	if (rc.getResourceAmount(ResourceType.ELIXIR) >= 300) {
         		if (rc.canBuildAnchor(Anchor.ACCELERATING)) {
         			rc.buildAnchor(Anchor.ACCELERATING);
         			rc.setIndicatorString("Building an achor!");
         		}
-        	} else if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 600 && rc.getResourceAmount(ResourceType.MANA) >= 100) {
+        	} /*else if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 600 && rc.getResourceAmount(ResourceType.MANA) >= 100) {
         		if (rc.canBuildAnchor(Anchor.STANDARD)) {
 	                rc.buildAnchor(Anchor.STANDARD);
 	                rc.setIndicatorString("Building an anchor!");
 	        	}
-	     	} 
+	     	} */
 	    }
 	}
 
@@ -258,7 +241,7 @@ public strictfp class RobotPlayer {
         if(enemies.length > 0) {
         	MapLocation nearestEnemy = new MapLocation(61,61);
         	for(RobotInfo bot : enemies){
-                if (bot.type != RobotType.CARRIER && bot.type != RobotType.AMPLIFIER){
+                if (bot.type != RobotType.CARRIER && bot.type != RobotType.AMPLIFIER && bot.type != RobotType.HEADQUARTERS){
                 	MapLocation botLoc = bot.getLocation(); 
                 	if (me.distanceSquaredTo(botLoc) < me.distanceSquaredTo(nearestEnemy)) {
                 		nearestEnemy = botLoc;
@@ -266,8 +249,15 @@ public strictfp class RobotPlayer {
                 }
         	}
         	if (rc.onTheMap(nearestEnemy)) {
+        		if (total > 14) {
+        			if(rc.canAttack(nearestEnemy)) {
+        				fireZeLaser(rc, nearestEnemy);
+                		rc.setIndicatorString("Projectile poop!");
+        			} else {
+                		rc.setIndicatorString("AHHHHHHHHHHHHHHHHHHHHH");
+        			}
+        		}
         		flee(rc, nearestEnemy);
-        		rc.setIndicatorString("AHHHHHHHHHHHHHHHHHHHHH");
         	}
         }
         
@@ -417,14 +407,14 @@ public strictfp class RobotPlayer {
     		boolean wellFound = false;
         	for (WellInfo aWell : nearWell) {
         		MapLocation wellLoc = aWell.getMapLocation();
-        		RobotInfo[] atWell = rc.senseNearbyRobots(wellLoc, 2, friendly);
+        		RobotInfo[] atWell = rc.senseNearbyRobots(wellLoc, 4, friendly);
         		int crowdSize = 0;
         		for (RobotInfo robot : atWell) {
         			if (robot.getType() == RobotType.CARRIER) {
         				crowdSize++;
         			}
         		}
-        		if (crowdSize < 5) {
+        		if (crowdSize < 6) {
         			wellFound = true;
         			mooTwo(rc, wellLoc);
         			rc.setIndicatorString("Moving to well!" + wellLoc.x + " " + wellLoc.y);
@@ -483,22 +473,30 @@ public strictfp class RobotPlayer {
         Team opponent = rc.getTeam().opponent();
         RobotInfo[] enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, opponent);
         if (enemies.length > 0){
-            rc.setIndicatorString("I see an enemy!");
-            for(RobotInfo bot : enemies){
-                if(bot.type == RobotType.LAUNCHER){
-                    if(rc.canAttack(bot.location)){
-                        rc.attack(bot.location);
-                    } else {
-                        mooTwo(rc, bot.location);
-                    }
-                } else{
-                    if(rc.canAttack(bot.location)){
-                        rc.attack(bot.location);
-                    } else {
-                        mooTwo(rc, bot.location);
-                    }
+            for(RobotInfo bot : enemies) {
+                if(bot.type == RobotType.DESTABILIZER){
+                	fireZeLaser(rc, bot.location);
+                    rc.setIndicatorString("Attacking a destabilizer!");
                 }
             }
+            for(RobotInfo bot : enemies) {
+            	if(bot.type == RobotType.BOOSTER) {
+                	fireZeLaser(rc, bot.location);
+                    rc.setIndicatorString("Attacking a booster!");
+                }
+            }
+            for(RobotInfo bot : enemies) {
+            	if(bot.type == RobotType.LAUNCHER) {
+                	fireZeLaser(rc, bot.location);
+                    rc.setIndicatorString("Attacking a launcher!");
+                }
+            }
+            for(RobotInfo bot : enemies) {
+            	fireZeLaser(rc, bot.location);
+                rc.setIndicatorString("Attacking a civilian!");
+            }
+        } else {
+            rc.setIndicatorString("Marching to enemy HQ! " + enemyHQs[nearHQidx].x + " " + enemyHQs[nearHQidx].y);
         }
         mooTwo(rc, enemyHQs[nearHQidx]);
         /*rc.setIndicatorString("Moving to center of map - " + centerOfMap.toString());
@@ -626,7 +624,17 @@ public strictfp class RobotPlayer {
     public static void mooTwo(RobotController rc, MapLocation loc) throws GameActionException {
         Direction dir = rc.getLocation().directionTo(loc);
         Direction secDir = dirSecDir(rc.getLocation(), loc);
-        if (rc.canMove(dir)) {
+        scoot(rc, dir, secDir);
+    }
+    
+    public static void flee(RobotController rc, MapLocation loc) throws GameActionException {
+        Direction dir = rc.getLocation().directionTo(loc).opposite();
+        Direction secDir = dirSecDir(rc.getLocation(), loc).opposite();
+        scoot(rc, dir, secDir);
+    }
+    
+    public static void scoot(RobotController rc, Direction dir, Direction secDir) throws GameActionException {
+    	if (rc.canMove(dir)) {
             rc.move(dir);
         } else if (rc.canMove(secDir)) {
             rc.move(secDir);
@@ -657,37 +665,13 @@ public strictfp class RobotPlayer {
     	}
     }
     
-    public static void flee(RobotController rc, MapLocation loc) throws GameActionException {
-        Direction dir = rc.getLocation().directionTo(loc).opposite();
-        Direction secDir = dirSecDir(rc.getLocation(), loc).opposite();
-        if (rc.canMove(dir)) {
-            rc.move(dir);
-        } else if (rc.canMove(secDir)) {
-            rc.move(secDir);
-        } else if (dir.rotateLeft() == secDir) {
-        	if (rc.canMove(dir.rotateRight())) {
-                rc.move(dir.rotateRight());
-        	} else if (rc.canMove(dir.rotateLeft())) {
-        		rc.move(dir.rotateLeft());
-        	} else if (rc.canMove(dir.rotateRight().rotateRight())) {
-                rc.move(dir.rotateRight().rotateRight());
-        	} else if (rc.canMove(dir.rotateLeft().rotateLeft())) {
-        		rc.move(dir.rotateLeft().rotateLeft());
-        	} else if (rc.canMove(dir.rotateRight().rotateRight().rotateRight())) {
-                rc.move(dir.rotateRight().rotateRight().rotateRight());
-        	} else if (rc.canMove(dir.rotateLeft().rotateLeft().rotateLeft())) {
-        		rc.move(dir.rotateLeft().rotateLeft().rotateLeft());
-        	}
-        } else if (rc.canMove(dir.rotateRight())) {
-    		rc.move(dir.rotateRight());
-    	} else if (rc.canMove(dir.rotateLeft().rotateLeft())) {
-            rc.move(dir.rotateLeft().rotateLeft());
-    	} else if (rc.canMove(dir.rotateRight().rotateRight())) {
-    		rc.move(dir.rotateRight().rotateRight());
-    	} else if (rc.canMove(dir.rotateLeft().rotateLeft().rotateLeft())) {
-            rc.move(dir.rotateLeft().rotateLeft().rotateLeft());
-    	} else if (rc.canMove(dir.rotateRight().rotateRight().rotateRight())) {
-    		rc.move(dir.rotateRight().rotateRight().rotateRight());
-    	}
+    public static void fireZeLaser(RobotController rc, MapLocation loc) throws GameActionException {
+    	if(rc.canAttack(loc)){
+            rc.attack(loc);
+        } else if (rc.canActLocation(loc)) {
+            flee(rc, loc);
+        } else {
+        	mooTwo(rc, loc);
+        }
     }
 } 
