@@ -185,6 +185,11 @@ public strictfp class RobotPlayer {
                 }
             }
         } */
+
+        //Spawn Launcher Code
+        if (rc.canBuildRobot(RobotType.Launcher,spawnLocation)){
+            rc.buildRobot(RobotType.Launcher, spawnLocation);
+        }
         
     }
 
@@ -316,6 +321,24 @@ public strictfp class RobotPlayer {
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
      */
     static void runLauncher(RobotController rc) throws GameActionException {
+        //if see enemy, shoot
+        Team opponent = rc.opponent();
+        RobotInfo[] enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, opponent);
+        if (enemies.length > 0){
+            for(RobotInfo bot : friends){
+                if(bot.type == RobotType.LAUNCHER){
+                    if(rc.canAttack(bot.location)){
+                        rc.attack(bot.location)
+                    } else {
+                        rc.move(mootoo(bot.location));
+                    }
+                }
+            }
+        }
+
+
+        //Otherwise, move towards the middle of the map
+        //then, move towards enemy HQ if nothing
         
     }
 
