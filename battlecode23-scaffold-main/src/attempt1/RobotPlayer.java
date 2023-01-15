@@ -138,7 +138,8 @@ public strictfp class RobotPlayer {
                         }
                     }
                 }
-            if(carrierCounter < 5){
+            ///***ADJUST NUMBER OF CARRIERS HERE***///
+            if(carrierCounter <= 6){
                 //System.out.println("Printing Carrier");
                 //System.out.println("Printing Carrier, + " + carrierCounter);
                 if(rc.canBuildRobot(RobotType.CARRIER, spawnLocation)){
@@ -239,6 +240,7 @@ public strictfp class RobotPlayer {
         
         MapLocation preciseTarget = new MapLocation(61,61);
         
+        //Find friendly HQs
         Team friendly = rc.getTeam();
         RobotInfo[] friends = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, friendly);
         if(friends.length > 0) {
@@ -302,6 +304,7 @@ public strictfp class RobotPlayer {
 	                mooTwo(rc, hqs[nearHQidx]);
 	        	}
     		}
+        	//If not carrying an anchor, take one if the HQ has one
         } else if (rc.getAnchor() == null) {
         	if (rc.canSenseLocation(preciseTarget)) {
         		if (rc.senseRobotAtLocation(preciseTarget).getTotalAnchors() > 0) {
@@ -318,13 +321,14 @@ public strictfp class RobotPlayer {
         		}
         	}
         }
-        
+        //If carrying an anchor and standing on a valid island, plant the anchor
         if (rc.getAnchor() != null) {
         	if(rc.canPlaceAnchor() == true) {
             	if (rc.senseTeamOccupyingIsland(rc.senseIsland(me)) != rc.getTeam()) {
             		rc.placeAnchor();
             		rc.setIndicatorString("Planting an anchor!");
             	}
+            	//Spread out, avoid other bots with anchors
         	} else {
         		if(friends.length > 0) {
         			MapLocation nearestAnchorBot = new MapLocation(61,61);
@@ -339,7 +343,7 @@ public strictfp class RobotPlayer {
                 		flee(rc, nearestAnchorBot);
                 	}
                 }
-        		
+        		//Scan for visible islands, determine which is closest, and move to it
         		int[] nearbyIslands = rc.senseNearbyIslands();
         		if (nearbyIslands.length > 0) {
         			List<Integer> plantableIslands = new ArrayList<Integer>();
@@ -390,11 +394,28 @@ public strictfp class RobotPlayer {
             }
         }
 
-        //if wells nearby, move to them
+        //if wells nearby and not crowded, move to them
         if(nearWell.length >= 1 && total < desiredResourceAmount){
-            MapLocation aWell = nearWell[0].getMapLocation();
-            //Direction dir = rc.getLocation().directionTo(aWell);
-            mooTwo(rc, aWell);
+    		boolean wellFound = false;
+        	for (WellInfo aWell : nearWell) {
+        		MapLocation wellLoc = aWell.getMapLocation();
+        		RobotInfo[] atWell = rc.senseNearbyRobots(wellLoc, 2, friendly);
+        		int crowdSize = 0;
+        		for (RobotInfo robot : atWell) {
+        			if (robot.getType() == RobotType.CARRIER) {
+        				crowdSize++;
+        			}
+        		}
+        		if (crowdSize < 5) {
+        			wellFound = true;
+        			mooTwo(rc, wellLoc);
+        			rc.setIndicatorString("Moving to well!" + wellLoc.x + " " + wellLoc.y);
+        		}
+        	}
+        	if (wellFound == false) {
+        		flee(rc, nearWell[0].getMapLocation());
+        		rc.setIndicatorString("Ew. People. Looking for somewhere less crowded!");
+        	}
         }
 
         
