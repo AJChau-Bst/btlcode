@@ -137,7 +137,7 @@ public strictfp class RobotPlayer {
                         }
                     }
                 }
-            if(carrierCounter <= 2){
+            if(carrierCounter < 5){
                 //System.out.println("Printing Carrier");
                 //System.out.println("Printing Carrier, + " + carrierCounter);
                 if(rc.canBuildRobot(RobotType.CARRIER, spawnLocation)){
@@ -300,6 +300,45 @@ public strictfp class RobotPlayer {
         			} else {
         				mooTwo(rc, preciseTarget);
         			}
+        		}
+        	}
+        }
+        
+        if (rc.getAnchor() != null) {
+        	if(rc.canPlaceAnchor() == true) {
+            	if (rc.senseTeamOccupyingIsland(rc.senseIsland(me)) != rc.getTeam()) {
+            		rc.placeAnchor();
+            	}
+        	} else {
+        		int[] nearbyIslands = rc.senseNearbyIslands();
+        		if (nearbyIslands.length > 0) {
+        			List<Integer> plantableIslands = new ArrayList<Integer>();
+            		for (int i : nearbyIslands) {
+            			if (rc.senseTeamOccupyingIsland(i) != rc.getTeam()) {
+            				plantableIslands.add(i);
+            			}
+            		}
+            		//plantableIslands.removeIf(Objects::isNull);
+            		MapLocation[] nearestIslandLoc = new MapLocation[plantableIslands.size()];
+            		int idx = 0;
+            		for (int j : plantableIslands) {
+            			MapLocation[] islandLocs = rc.senseNearbyIslandLocations(j);
+            			MapLocation nearestLoc = new MapLocation(61,61);
+            			for (MapLocation k : islandLocs) {
+            				if (me.distanceSquaredTo(k) < me.distanceSquaredTo(nearestLoc)) {
+            					nearestLoc = k;
+            				}
+            			}
+            			nearestIslandLoc[idx] = nearestLoc;
+            			idx++;
+            		}
+            		MapLocation nearestIsland = new MapLocation(61,61);
+            		for (MapLocation l : nearestIslandLoc) {
+            			if (me.distanceSquaredTo(l) < me.distanceSquaredTo(nearestIsland)) {
+            				nearestIsland = l;
+            			}
+            		}
+            		mooTwo(rc, nearestIsland);
         		}
         	}
         }
