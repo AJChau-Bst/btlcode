@@ -174,11 +174,11 @@ public strictfp class RobotPlayer {
         	rc.writeSharedArray(lookingForIndex - 3, buttTranslation);
         	rc.setIndicatorString("Documenting my location!");
         } 
-        MapLocation hqOne = buttToDec(rc.readSharedArray(lookingForIndex), width, height);
+        /*MapLocation hqOne = buttToDec(rc.readSharedArray(lookingForIndex), width, height);
         MapLocation hqTwo = buttToDec(rc.readSharedArray(lookingForIndex-1), width, height);
         MapLocation hqThree = buttToDec(rc.readSharedArray(lookingForIndex-2), width, height);
         MapLocation hqFour = buttToDec(rc.readSharedArray(lookingForIndex-3), width, height);
-        //rc.setIndicatorString(hqOne.x + " " + hqOne.y + " " + hqTwo.x + " " + hqTwo.y + " " + hqThree.x + " " + hqThree.y + " " + hqFour.x + " " + hqFour.y + " ");
+        //rc.setIndicatorString(hqOne.x + " " + hqOne.y + " " + hqTwo.x + " " + hqTwo.y + " " + hqThree.x + " " + hqThree.y + " " + hqFour.x + " " + hqFour.y + " ");*/
         
         //When threshold for resources, create an anchor and a carrier, then transfer the anchor to carrier
 /*         if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 500 && rc.getResourceAmount(ResourceType.MANA) >= 500) {
@@ -325,6 +325,20 @@ public strictfp class RobotPlayer {
             		rc.setIndicatorString("Planting an anchor!");
             	}
         	} else {
+        		if(friends.length > 0) {
+        			MapLocation nearestAnchorBot = new MapLocation(61,61);
+                	for(RobotInfo bot : friends){
+                		if(bot.getTotalAnchors() > 0) {
+                			if (me.distanceSquaredTo(bot.getLocation()) < me.distanceSquaredTo(nearestAnchorBot)){
+                            	nearestAnchorBot = bot.getLocation();
+                            }
+                		}
+                	}
+                	if (rc.onTheMap(nearestAnchorBot)) {
+                		flee(rc, nearestAnchorBot);
+                	}
+                }
+        		
         		int[] nearbyIslands = rc.senseNearbyIslands();
         		if (nearbyIslands.length > 0) {
         			List<Integer> plantableIslands = new ArrayList<Integer>();
@@ -394,7 +408,7 @@ public strictfp class RobotPlayer {
         //move to center
         int centerWidth = Math.round(width/2);
         MapLocation centerOfMap = new MapLocation(centerWidth, centerWidth);
-        Direction launcherDir = me.directionTo(centerOfMap);
+        //Direction launcherDir = me.directionTo(centerOfMap);
         //Enemy HQ location calculation
 
         int nearHQidx = 0;
@@ -557,6 +571,40 @@ public strictfp class RobotPlayer {
     public static void mooTwo(RobotController rc, MapLocation loc) throws GameActionException {
         Direction dir = rc.getLocation().directionTo(loc);
         Direction secDir = dirSecDir(rc.getLocation(), loc);
+        if (rc.canMove(dir)) {
+            rc.move(dir);
+        } else if (rc.canMove(secDir)) {
+            rc.move(secDir);
+        } else if (dir.rotateLeft() == secDir) {
+        	if (rc.canMove(dir.rotateRight())) {
+                rc.move(dir.rotateRight());
+        	} else if (rc.canMove(dir.rotateLeft())) {
+        		rc.move(dir.rotateLeft());
+        	} else if (rc.canMove(dir.rotateRight().rotateRight())) {
+                rc.move(dir.rotateRight().rotateRight());
+        	} else if (rc.canMove(dir.rotateLeft().rotateLeft())) {
+        		rc.move(dir.rotateLeft().rotateLeft());
+        	} else if (rc.canMove(dir.rotateRight().rotateRight().rotateRight())) {
+                rc.move(dir.rotateRight().rotateRight().rotateRight());
+        	} else if (rc.canMove(dir.rotateLeft().rotateLeft().rotateLeft())) {
+        		rc.move(dir.rotateLeft().rotateLeft().rotateLeft());
+        	}
+        } else if (rc.canMove(dir.rotateRight())) {
+    		rc.move(dir.rotateRight());
+    	} else if (rc.canMove(dir.rotateLeft().rotateLeft())) {
+            rc.move(dir.rotateLeft().rotateLeft());
+    	} else if (rc.canMove(dir.rotateRight().rotateRight())) {
+    		rc.move(dir.rotateRight().rotateRight());
+    	} else if (rc.canMove(dir.rotateLeft().rotateLeft().rotateLeft())) {
+            rc.move(dir.rotateLeft().rotateLeft().rotateLeft());
+    	} else if (rc.canMove(dir.rotateRight().rotateRight().rotateRight())) {
+    		rc.move(dir.rotateRight().rotateRight().rotateRight());
+    	}
+    }
+    
+    public static void flee(RobotController rc, MapLocation loc) throws GameActionException {
+        Direction dir = rc.getLocation().directionTo(loc).opposite();
+        Direction secDir = dirSecDir(rc.getLocation(), loc).opposite();
         if (rc.canMove(dir)) {
             rc.move(dir);
         } else if (rc.canMove(secDir)) {
