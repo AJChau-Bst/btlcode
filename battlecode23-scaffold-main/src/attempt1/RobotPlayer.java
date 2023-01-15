@@ -143,6 +143,7 @@ public strictfp class RobotPlayer {
                 //System.out.println("Printing Carrier, + " + carrierCounter);
                 if(rc.canBuildRobot(RobotType.CARRIER, spawnLocation)){
                     rc.buildRobot(RobotType.CARRIER, spawnLocation);
+                    rc.setIndicatorString("Building a carrier!");
             }
 
         //if(rc.canBuildRobot(RobotType.CARRIER, spawnLocation)){
@@ -162,18 +163,22 @@ public strictfp class RobotPlayer {
         //Adding HQ location to Shared Array using Butt
         if (rc.readSharedArray(lookingForIndex) == 0){
         	rc.writeSharedArray(lookingForIndex, buttTranslation);
+        	rc.setIndicatorString("Documenting my location!");
         } else if (rc.readSharedArray(lookingForIndex - 1) == 0){
         	rc.writeSharedArray(lookingForIndex - 1, buttTranslation);
+        	rc.setIndicatorString("Documenting my location!");
         } else if (rc.readSharedArray(lookingForIndex - 2) == 0){
         	rc.writeSharedArray(lookingForIndex - 2, buttTranslation);
+        	rc.setIndicatorString("Documenting my location!");
         } else if (rc.readSharedArray(lookingForIndex - 3) == 0){
         	rc.writeSharedArray(lookingForIndex - 3, buttTranslation);
+        	rc.setIndicatorString("Documenting my location!");
         } 
         MapLocation hqOne = buttToDec(rc.readSharedArray(lookingForIndex), width, height);
         MapLocation hqTwo = buttToDec(rc.readSharedArray(lookingForIndex-1), width, height);
         MapLocation hqThree = buttToDec(rc.readSharedArray(lookingForIndex-2), width, height);
         MapLocation hqFour = buttToDec(rc.readSharedArray(lookingForIndex-3), width, height);
-        rc.setIndicatorString(hqOne.x + " " + hqOne.y + " " + hqTwo.x + " " + hqTwo.y + " " + hqThree.x + " " + hqThree.y + " " + hqFour.x + " " + hqFour.y + " ");
+        //rc.setIndicatorString(hqOne.x + " " + hqOne.y + " " + hqTwo.x + " " + hqTwo.y + " " + hqThree.x + " " + hqThree.y + " " + hqFour.x + " " + hqFour.y + " ");
         
         //When threshold for resources, create an anchor and a carrier, then transfer the anchor to carrier
 /*         if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 500 && rc.getResourceAmount(ResourceType.MANA) >= 500) {
@@ -202,10 +207,12 @@ public strictfp class RobotPlayer {
         	if (rc.getResourceAmount(ResourceType.ELIXIR) >= 1000) {
         		if (rc.canBuildAnchor(Anchor.ACCELERATING)) {
         			rc.buildAnchor(Anchor.ACCELERATING);
+        			rc.setIndicatorString("Building an achor!");
         		}
         	} else if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 600 && rc.getResourceAmount(ResourceType.MANA) >= 600) {
         		if (rc.canBuildAnchor(Anchor.STANDARD)) {
 	                rc.buildAnchor(Anchor.STANDARD);
+	                rc.setIndicatorString("Building an anchor!");
 	        	}
 	     	} 
 	    }
@@ -246,7 +253,6 @@ public strictfp class RobotPlayer {
         if (total > 0) {
         	//if full of resource, scan for nearest HQ and move there.
         	if (rc.onTheMap(preciseTarget)) {
-            	rc.setIndicatorString("Returning to HQ!" + preciseTarget.x + " " + preciseTarget.y);
         		if(me.isAdjacentTo(preciseTarget)){
                     rc.setIndicatorString("IM CONSTIPATED!!");
                     if(rc.canTransferResource(preciseTarget, ResourceType.ADAMANTIUM, rc.getResourceAmount(ResourceType.ADAMANTIUM))){
@@ -268,6 +274,7 @@ public strictfp class RobotPlayer {
 		                    	preciseTarget = bot.getLocation();
 		                        //Direction dir = me.directionTo(preciseTarget);
 		                        mooTwo(rc, preciseTarget);
+		                        rc.setIndicatorString("Returning to HQ!" + preciseTarget.x + " " + preciseTarget.y);
 		                        break;
 		                    }
 		                }
@@ -276,7 +283,6 @@ public strictfp class RobotPlayer {
         	}
         	if (total >= desiredResourceAmount) {	
 	        	if(hqSpotted == false) {
-	        		rc.setIndicatorString("Heading back, approximately");
 	    	        int nearHQidx = 0;
 	    	        int nearHQdist = 7201;
 	    	        int dist = 7202;
@@ -300,10 +306,13 @@ public strictfp class RobotPlayer {
         		if (rc.senseRobotAtLocation(preciseTarget).getTotalAnchors() > 0) {
         			if (rc.canTakeAnchor(preciseTarget, Anchor.ACCELERATING)) {
         				rc.takeAnchor(preciseTarget, Anchor.ACCELERATING);
+        				rc.setIndicatorString("Taking an anchor!");
         			} else if (rc.canTakeAnchor(preciseTarget, Anchor.STANDARD)) {
         				rc.takeAnchor(preciseTarget, Anchor.STANDARD);
+        				rc.setIndicatorString("Taking an anchor!");
         			} else {
         				mooTwo(rc, preciseTarget);
+        				rc.setIndicatorString("Moving to get an anchor!");
         			}
         		}
         	}
@@ -313,6 +322,7 @@ public strictfp class RobotPlayer {
         	if(rc.canPlaceAnchor() == true) {
             	if (rc.senseTeamOccupyingIsland(rc.senseIsland(me)) != rc.getTeam()) {
             		rc.placeAnchor();
+            		rc.setIndicatorString("Planting an anchor!");
             	}
         	} else {
         		int[] nearbyIslands = rc.senseNearbyIslands();
@@ -344,6 +354,7 @@ public strictfp class RobotPlayer {
             			}
             		}
             		mooTwo(rc, nearestIsland);
+            		rc.setIndicatorString("Heading to an island!" + nearestIsland.x + " " + nearestIsland.y);
         		}
         	}
         }
