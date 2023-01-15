@@ -253,6 +253,24 @@ public strictfp class RobotPlayer {
         	}
         }
         
+      //Run from nearest enemy bot (threatening)
+        RobotInfo[] enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, friendly.opponent());
+        if(enemies.length > 0) {
+        	MapLocation nearestEnemy = new MapLocation(61,61);
+        	for(RobotInfo bot : enemies){
+                if (bot.type != RobotType.CARRIER && bot.type != RobotType.AMPLIFIER){
+                	MapLocation botLoc = bot.getLocation(); 
+                	if (me.distanceSquaredTo(botLoc) < me.distanceSquaredTo(nearestEnemy)) {
+                		nearestEnemy = botLoc;
+                	}
+                }
+        	}
+        	if (rc.onTheMap(nearestEnemy)) {
+        		flee(rc, nearestEnemy);
+        		rc.setIndicatorString("AHHHHHHHHHHHHHHHHHHHHH");
+        	}
+        }
+        
         if (total > 0) {
         	//if full of resource, scan for nearest HQ and move there.
         	if (rc.onTheMap(preciseTarget)) {
@@ -410,11 +428,25 @@ public strictfp class RobotPlayer {
         			wellFound = true;
         			mooTwo(rc, wellLoc);
         			rc.setIndicatorString("Moving to well!" + wellLoc.x + " " + wellLoc.y);
+        			break;
         		}
         	}
         	if (wellFound == false) {
         		flee(rc, nearWell[0].getMapLocation());
         		rc.setIndicatorString("Ew. People. Looking for somewhere less crowded!");
+        	}
+        } else {
+        	RobotInfo[] nearbyBots = rc.senseNearbyRobots(rc.getType().visionRadiusSquared);
+        	MapLocation nearestBot = new MapLocation(61,61);
+        	for (RobotInfo aBot : nearbyBots) {
+        		if (me.distanceSquaredTo(aBot.getLocation()) < me.distanceSquaredTo(nearestBot)) {
+        			nearestBot = aBot.getLocation();
+        		}
+        	}
+        	if (rc.onTheMap(nearestBot)) {
+        		flee(rc, nearestBot);
+        	} else {
+        		mooTwo(rc, new MapLocation(Math.round(rc.getMapWidth()/2),Math.round(rc.getMapHeight()/2)));
         	}
         }
 
@@ -426,10 +458,11 @@ public strictfp class RobotPlayer {
      */
      static void runLauncher(RobotController rc) throws GameActionException {
         int width = rc.getMapWidth();
+        int height = rc.getMapHeight();
         MapLocation me = rc.getLocation();
         //move to center
-        int centerWidth = Math.round(width/2);
-        MapLocation centerOfMap = new MapLocation(centerWidth, centerWidth);
+        //int centerWidth = Math.round(width/2);
+        //MapLocation centerOfMap = new MapLocation(centerWidth, centerWidth);
         //Direction launcherDir = me.directionTo(centerOfMap);
         //Enemy HQ location calculation
 
@@ -438,7 +471,8 @@ public strictfp class RobotPlayer {
         int dist = 7202;
         MapLocation[] enemyHQs = new MapLocation[4];
         for(int i = 0; i < 4; ++i) {
-            enemyHQs[i] = buttToDec(rc.readSharedArray(63-i), width, width);
+            MapLocation friendlyHQ = buttToDec(rc.readSharedArray(63-i), width, height);
+            enemyHQs[i] = findEnemyHQ(friendlyHQ, width, height);
             dist = me.distanceSquaredTo(enemyHQs[i]);
             if(dist < nearHQdist) {
                 nearHQidx = i;
@@ -466,31 +500,31 @@ public strictfp class RobotPlayer {
                 }
             }
         }
-        mooTwo(rc, centerOfMap);
-        rc.setIndicatorString("Moving to center of map - " + centerOfMap.toString());
+        mooTwo(rc, enemyHQs[nearHQidx]);
+        /*rc.setIndicatorString("Moving to center of map - " + centerOfMap.toString());
         if(me.equals(centerOfMap) || me.isAdjacentTo(centerOfMap)){
             mooTwo(rc, enemyHQs[nearHQidx]);
             rc.setIndicatorString("Moving to enemy HQ - " + enemyHQs[nearHQidx]);
-        }
+        }*/
     }
 
 
         //Otherwise, move towards the middle of the map
         //then, move towards enemy HQ if nothing 
 
-    public static MapLocation findEnemyHQ(MapLocation map, int width){
+    public static MapLocation findEnemyHQ(MapLocation map, int width, int height){
         int x = map.x;
         int y = map.y;
         int halfwidth = (int)Math.round(width*.5);
+        int halfheight = (int)Math.round(height*.5);
 
         x = x - halfwidth;
-        y = y - halfwidth;
+        y = y - halfheight;
         x = x * -1;
         y = y * -1;
         x = x + halfwidth;
-        y = y + halfwidth;
-        MapLocation enemyHQ = new MapLocation(x,y);
-        return enemyHQ;
+        y = y + halfheight;
+        return new MapLocation(x,y);
 
     }
     public static int decToButt(MapLocation loc, float width, float height){
