@@ -261,6 +261,20 @@ public strictfp class RobotPlayer {
         	}
         }
         
+        //Approximate nearest HQ
+        int nearHQidx = 0;
+        int nearHQdist = 7201;
+        int dist = 7202;
+        MapLocation[] hqs = new MapLocation[4];
+        for(int i = 0; i < 4; ++i) {
+        	hqs[i] = buttToDec(rc.readSharedArray(63-i), width, height);
+        	dist = me.distanceSquaredTo(hqs[i]);
+            if(dist < nearHQdist) {
+            	nearHQidx = i;
+            	nearHQdist = dist;
+            }
+        }
+        
         if (total > 0) {
         	//if full of resource, scan for nearest HQ and move there.
         	if (rc.onTheMap(preciseTarget)) {
@@ -294,18 +308,6 @@ public strictfp class RobotPlayer {
         	}
         	if (total >= desiredResourceAmount) {	
 	        	if(hqSpotted == false) {
-	    	        int nearHQidx = 0;
-	    	        int nearHQdist = 7201;
-	    	        int dist = 7202;
-	    	        MapLocation[] hqs = new MapLocation[4];
-	    	        for(int i = 0; i < 4; ++i) {
-	    	        	hqs[i] = buttToDec(rc.readSharedArray(63-i), width, height);
-	    	        	dist = me.distanceSquaredTo(hqs[i]);
-	    	            if(dist < nearHQdist) {
-	    	            	nearHQidx = i;
-	    	            	nearHQdist = dist;
-	    	            }
-	    	        }
 	    	        //Direction nearestHQ = me.directionTo(hqs[nearHQidx]);
 	                //MapLocation targetHQ = hqs[nearHQidx];
 	                rc.setIndicatorString("Going to " + hqs[nearHQidx].x + " " + hqs[nearHQidx].y);
@@ -404,7 +406,8 @@ public strictfp class RobotPlayer {
 
         //if wells nearby and not crowded, move to them
         if(nearWell.length >= 1 && total < desiredResourceAmount){
-    		boolean wellFound = false;
+    		MapLocation desiredWell = new MapLocation(61,61);
+    		int bestWellScore = 200000;
         	for (WellInfo aWell : nearWell) {
         		MapLocation wellLoc = aWell.getMapLocation();
         		RobotInfo[] atWell = rc.senseNearbyRobots(wellLoc, 4, friendly);
@@ -414,16 +417,18 @@ public strictfp class RobotPlayer {
         				crowdSize++;
         			}
         		}
-        		if (crowdSize < 6) {
-        			wellFound = true;
-        			mooTwo(rc, wellLoc);
-        			rc.setIndicatorString("Moving to well!" + wellLoc.x + " " + wellLoc.y);
-        			break;
+        		int wellScore = ((me.distanceSquaredTo(hqs[nearHQidx]) + me.distanceSquaredTo(wellLoc)) * Math.max(1, (int) Math.floor((crowdSize / 2))) ) ;
+        		if (wellScore < bestWellScore) {
+        			desiredWell = wellLoc;
+        			bestWellScore = wellScore;
         		}
         	}
-        	if (wellFound == false) {
+        	if (rc.onTheMap(desiredWell)) {
+    			mooTwo(rc, desiredWell);
+    			rc.setIndicatorString("Moving to well!" + desiredWell.x + " " + desiredWell.y);
+        	} else {
         		flee(rc, nearWell[0].getMapLocation());
-        		rc.setIndicatorString("Ew. People. Looking for somewhere less crowded!");
+        		rc.setIndicatorString("Looking for another well!");
         	}
         } else {
         	RobotInfo[] nearbyBots = rc.senseNearbyRobots(rc.getType().visionRadiusSquared);
