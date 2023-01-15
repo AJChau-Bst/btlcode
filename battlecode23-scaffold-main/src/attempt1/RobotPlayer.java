@@ -197,9 +197,10 @@ public strictfp class RobotPlayer {
         MapLocation centerOfMap = new MapLocation(centerWidth, centerWidth);
         Direction launcherDir = me.directionTo(centerOfMap);
         MapLocation launcherSpawn = rc.getLocation().add(launcherDir);
-        if (rc.canBuildRobot(RobotType.LAUNCHER,launcherSpawn)){
-            rc.buildRobot(RobotType.LAUNCHER, launcherSpawn);
-        }
+        if(rc.getResourceAmount(ResourceType.MANA) >= 100 && rng.nextInt(4) != 4)
+            if (rc.canBuildRobot(RobotType.LAUNCHER,launcherSpawn)){
+                rc.buildRobot(RobotType.LAUNCHER, launcherSpawn);
+            }
         
     
         //When threshold for resources, create an anchor
@@ -209,7 +210,7 @@ public strictfp class RobotPlayer {
         			rc.buildAnchor(Anchor.ACCELERATING);
         			rc.setIndicatorString("Building an achor!");
         		}
-        	} else if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 600 && rc.getResourceAmount(ResourceType.MANA) >= 600) {
+        	} else if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 600 && rc.getResourceAmount(ResourceType.MANA) >= 100) {
         		if (rc.canBuildAnchor(Anchor.STANDARD)) {
 	                rc.buildAnchor(Anchor.STANDARD);
 	                rc.setIndicatorString("Building an anchor!");
@@ -443,7 +444,7 @@ public strictfp class RobotPlayer {
                     }
                 }
             }
-
+        }
         mooTwo(rc, centerOfMap);
         rc.setIndicatorString("Moving to center of map - " + centerOfMap.toString());
         if(me.equals(centerOfMap) || me.isAdjacentTo(centerOfMap)){
@@ -454,8 +455,7 @@ public strictfp class RobotPlayer {
 
 
         //Otherwise, move towards the middle of the map
-        //then, move towards enemy HQ if nothing
-    } 
+        //then, move towards enemy HQ if nothing 
 
     public static MapLocation findEnemyHQ(MapLocation map, int width){
         int x = map.x;
