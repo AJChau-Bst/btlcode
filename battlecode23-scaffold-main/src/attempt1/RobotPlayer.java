@@ -136,7 +136,7 @@ public strictfp class RobotPlayer {
         int centerHeight = Math.round(height/2);
         MapLocation centerOfMap = new MapLocation(centerWidth, centerHeight);
         //ArrayList<AdvMapLoc> launcherSpawnLocs = locationsAround(rc, me, centerOfMap, rc.getType().actionRadiusSquared);
-        if(rc.getResourceAmount(ResourceType.MANA) >= 100 && rng.nextInt(4) != 4) {
+        if(rc.getResourceAmount(ResourceType.MANA) >= 100 && rng.nextInt(2000) > turnCount/2000) {
         	for (AdvMapLoc advLoc : carrierSpawnLocs) {
         		if (rc.canBuildRobot(RobotType.LAUNCHER, advLoc.loc)){
                     rc.buildRobot(RobotType.LAUNCHER, advLoc.loc);
@@ -207,7 +207,7 @@ public strictfp class RobotPlayer {
         			rc.buildAnchor(Anchor.ACCELERATING);
         			rc.setIndicatorString("Building an achor!");
         		}
-        	} else if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 600 && rc.getResourceAmount(ResourceType.MANA) >= 100 && turnCount > 1000) {
+        	} else if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 600 && rc.getResourceAmount(ResourceType.MANA) >= 100) {
         		if (rc.canBuildAnchor(Anchor.STANDARD)) {
 	                rc.buildAnchor(Anchor.STANDARD);
 	                rc.setIndicatorString("Building an anchor!");
