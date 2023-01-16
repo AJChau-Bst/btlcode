@@ -139,6 +139,8 @@ public strictfp class RobotPlayer {
         if(nearWell.length > 0) {
         	MapLocation nearestWell = nearWell[0].getMapLocation();
         	carrierSpawnLocs = locationsAround(rc, me, nearestWell, rc.getType().actionRadiusSquared);
+        } else {
+        	carrierSpawnLocs = locationsAround(rc, me, me, rc.getType().actionRadiusSquared);
         }
         //Direction targetAdWell = rc.getLocation().directionTo(nearestAdWell);
         //Build Carriers, if we can build carriers -- NEED TO CHANGE THIS LOGIC/ADD AND CONDITION
