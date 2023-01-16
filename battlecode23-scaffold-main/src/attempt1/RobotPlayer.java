@@ -117,46 +117,52 @@ public strictfp class RobotPlayer {
         //Declare Variables
         int lookingForIndex = 63;
         MapLocation me = rc.getLocation();
-        float width = rc.getMapWidth();
-        float height = rc.getMapHeight();
+        int width = rc.getMapWidth();
+        int height = rc.getMapHeight();
 
         //Spawn Launcher Code
         int centerWidth = Math.round(width/2);
-        MapLocation centerOfMap = new MapLocation(centerWidth, centerWidth);
-        Direction launcherDir = me.directionTo(centerOfMap);
-        MapLocation launcherSpawn = rc.getLocation().add(launcherDir);
+        int centerHeight = Math.round(height/2);
+        MapLocation centerOfMap = new MapLocation(centerWidth, centerHeight);
+        ArrayList<AdvMapLoc> launcherSpawnLocs = locationsAround(rc, me, centerOfMap, rc.getType().actionRadiusSquared);
         if(/*rc.getResourceAmount(ResourceType.MANA) >= 100 && rng.nextInt(4) != 4*/true) {
-        	if (rc.canBuildRobot(RobotType.LAUNCHER,launcherSpawn)){
-                rc.buildRobot(RobotType.LAUNCHER, launcherSpawn);
-            }
+        	for (AdvMapLoc advLoc : launcherSpawnLocs) {
+        		if (rc.canBuildRobot(RobotType.LAUNCHER, advLoc.loc)){
+                    rc.buildRobot(RobotType.LAUNCHER, advLoc.loc);
+                    break;
+                }
+        	}
         }
         //Find Nearby Wells
         WellInfo[] nearWell = rc.senseNearbyWells();
+        ArrayList<AdvMapLoc> carrierSpawnLocs = locationsAround(rc, me, centerOfMap, rc.getType().actionRadiusSquared);
         if(nearWell.length > 0) {
         	MapLocation nearestWell = nearWell[0].getMapLocation();
-            MapLocation spawnLocation = rc.adjacentLocation(rc.getLocation().directionTo(nearestWell));
+        	carrierSpawnLocs = locationsAround(rc, me, nearestWell, rc.getType().actionRadiusSquared);
+        }
         //Direction targetAdWell = rc.getLocation().directionTo(nearestAdWell);
         //Build Carriers, if we can build carriers -- NEED TO CHANGE THIS LOGIC/ADD AND CONDITION
         //Get Array of Nearby Robots, Count the NUmber of Carriers
         int carrierCounter = 0;
         Team friendly = rc.getTeam();
         RobotInfo[] friends = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, friendly);
-            if(friends.length > 0) {
-                for(RobotInfo bot : friends){
-                    if (bot.type == RobotType.CARRIER){
-                        carrierCounter = carrierCounter + 1;
-                        }
+        if(friends.length > 0) {
+            for(RobotInfo bot : friends){
+                if (bot.type == RobotType.CARRIER){
+                    carrierCounter = carrierCounter + 1;
                     }
                 }
-            ///***ADJUST NUMBER OF CARRIERS HERE***///
-            if(carrierCounter <= 9){
-                //System.out.println("Printing Carrier");
-                //System.out.println("Printing Carrier, + " + carrierCounter);
-                if(rc.canBuildRobot(RobotType.CARRIER, spawnLocation)){
-                    rc.buildRobot(RobotType.CARRIER, spawnLocation);
+            }
+        ///***ADJUST NUMBER OF CARRIERS HERE***///
+        if(carrierCounter <= 9){
+            //System.out.println("Printing Carrier");
+            //System.out.println("Printing Carrier, + " + carrierCounter);
+        	for (AdvMapLoc advLoc : carrierSpawnLocs) {
+        		if(rc.canBuildRobot(RobotType.CARRIER, advLoc.loc)){
+                    rc.buildRobot(RobotType.CARRIER, advLoc.loc);
                     rc.setIndicatorString("Building a carrier!");
                 }
-            }
+        	}
         }
 
         //System.out.println(me.toString());
@@ -182,11 +188,11 @@ public strictfp class RobotPlayer {
         	rc.writeSharedArray(lookingForIndex - 3, buttTranslation);
         	rc.setIndicatorString("Documenting my location!");
         } 
-        /*MapLocation hqOne = buttToDec(rc.readSharedArray(lookingForIndex), width, height);
+        MapLocation hqOne = buttToDec(rc.readSharedArray(lookingForIndex), width, height);
         MapLocation hqTwo = buttToDec(rc.readSharedArray(lookingForIndex-1), width, height);
         MapLocation hqThree = buttToDec(rc.readSharedArray(lookingForIndex-2), width, height);
         MapLocation hqFour = buttToDec(rc.readSharedArray(lookingForIndex-3), width, height);
-        //rc.setIndicatorString(hqOne.x + " " + hqOne.y + " " + hqTwo.x + " " + hqTwo.y + " " + hqThree.x + " " + hqThree.y + " " + hqFour.x + " " + hqFour.y + " ");*/
+        rc.setIndicatorString(hqOne.x + " " + hqOne.y + " " + hqTwo.x + " " + hqTwo.y + " " + hqThree.x + " " + hqThree.y + " " + hqFour.x + " " + hqFour.y + " ");
 
         //When threshold for resources, create an anchor
         if (rc.senseRobotAtLocation(me).getTotalAnchors() == 0) {
@@ -210,8 +216,8 @@ public strictfp class RobotPlayer {
      */
     static void runCarrier(RobotController rc) throws GameActionException {
         //Define Variables
-        float width = rc.getMapWidth();
-        float height = rc.getMapHeight();
+        int width = rc.getMapWidth();
+        int height = rc.getMapHeight();
         MapLocation me = rc.getLocation();
         int desiredResourceAmount = 40;
     	boolean hqSpotted = false;
@@ -575,7 +581,7 @@ public strictfp class RobotPlayer {
         	} else if(nearWell.length > 0) {
         		flee(rc, nearestWell);
         	} else if (friendCount > 5) {
-        		if (turnCount < 500) {
+        		if (turnCount < 250) {
         			mooTwo(rc, centerOfMap);
         			rc.setIndicatorString("Pressuring center! " + centerOfMap.x + " " + centerOfMap.y);
         		} else {
@@ -586,7 +592,7 @@ public strictfp class RobotPlayer {
         } else {
         	if (friendCount >= 2) {
         		if (crowd <= 2) {
-        			if (turnCount < 500) {
+        			if (turnCount < 250) {
             			mooTwo(rc, centerOfMap);
             			rc.setIndicatorString("Pressuring center! " + centerOfMap.x + " " + centerOfMap.y);
             		} else {
@@ -615,35 +621,35 @@ public strictfp class RobotPlayer {
     public static MapLocation findSymmetric(MapLocation map, int width, int height){
         int x = map.x;
         int y = map.y;
-        int halfwidth = (int)Math.round(width*.5);
-        int halfheight = (int)Math.round(height*.5);
+        float halfwidth = width/2;
+        float halfheight = height/2;
 
-        x = x - halfwidth;
-        y = y - halfheight;
-        x = x * -1;
-        y = y * -1;
-        x = x + halfwidth;
-        y = y + halfheight;
+        float tx = x - halfwidth;
+        float ty = y - halfheight;
+        tx = tx * -1;
+        ty = ty * -1;
+        x = Math.round(x + halfwidth);
+        y = Math.round(ty + halfheight);
         return new MapLocation(x,y);
 
     }
-    public static int decToButt(MapLocation loc, float width, float height){
+    public static int decToButt(MapLocation loc, int width, int height){
         int x = loc.x;
         int y = loc.y;
-        width = width/10;
-        height = height/10;
-        int ten = Math.round(x / width) * 10;
-        int one = Math.round(y / height);
+        float buttWidth = width/9;
+        float buttHeight = height/9;
+        int ten = ((int) Math.floor(x / buttWidth)) * 10;
+        int one = ((int) Math.floor(y / buttHeight));
         return ten + one + 100;
     }
 
-    public static MapLocation buttToDec(int buttNum, float width, float height){
-        width = width/10;
-        height = height/10;
+    public static MapLocation buttToDec(int buttNum, int width, int height){
+        float buttWidth = width/9;
+        float buttHeight = height/9;
         buttNum = buttNum - 100;
-        float dx = (buttNum * width) / 10;
+        float dx = (buttNum * buttWidth) / 10;
         int x = (int) Math.floor(dx);
-        int y = Math.round((buttNum % 10) * height);
+        int y = (int) Math.floor((buttNum % 10) * buttHeight);
         MapLocation newLoc = new MapLocation(x,y);
         return newLoc;
     }
@@ -771,7 +777,7 @@ public strictfp class RobotPlayer {
         } else if (rc.canActLocation(loc)) {
             flee(rc, loc);
         } else {
-        	mooTwo(rc, loc);
+        	//mooTwo(rc, loc);
         }
     }
     
@@ -789,27 +795,25 @@ public strictfp class RobotPlayer {
     	return nearestToTarget;
     }
     
-    public static AdvMapLoc[] locationsAround(RobotController rc, MapLocation me, MapLocation loc, int radiusSquared) throws GameActionException {
+    public static ArrayList<AdvMapLoc> locationsAround(RobotController rc, MapLocation me, MapLocation loc, int radiusSquared) throws GameActionException {
     	MapLocation[] visibleLoc = 	rc.getAllLocationsWithinRadiusSquared(me, radiusSquared);
-    	AdvMapLoc[] scoredLocations = new AdvMapLoc[visibleLoc.length];
+    	ArrayList<AdvMapLoc> scoredLocations = new ArrayList<AdvMapLoc>();
     	int idx = 0;
     	for (MapLocation aLoc : visibleLoc) {
     		int dist = aLoc.distanceSquaredTo(loc);
-    		scoredLocations[idx] = new AdvMapLoc(aLoc.x, aLoc.y, dist);
+    		scoredLocations.add(new AdvMapLoc(aLoc, dist));
     	}
-    	Arrays.sort(scoredLocations, Comparator.comparing(AdvMapLoc::getDist));
+    	Collections.sort(scoredLocations, Comparator.comparing(AdvMapLoc::getDist));
     	return scoredLocations;
     }
 } 
 
 class AdvMapLoc {
-	int x;
-	int y;
+	MapLocation loc;
 	int dist;
 	
-	public AdvMapLoc(int x, int y, int dist) {
-		this.x = x;
-		this.y = y;
+	public AdvMapLoc(MapLocation loc, int dist) {
+		this.loc = loc;
 		this.dist = dist;
 	}
 	
