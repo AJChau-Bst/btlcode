@@ -120,28 +120,31 @@ public strictfp class RobotPlayer {
         int width = rc.getMapWidth();
         int height = rc.getMapHeight();
 
-        //Spawn Launcher Code
-        int centerWidth = Math.round(width/2);
-        int centerHeight = Math.round(height/2);
-        MapLocation centerOfMap = new MapLocation(centerWidth, centerHeight);
-        ArrayList<AdvMapLoc> launcherSpawnLocs = locationsAround(rc, me, centerOfMap, rc.getType().actionRadiusSquared);
-        if(/*rc.getResourceAmount(ResourceType.MANA) >= 100 && rng.nextInt(4) != 4*/true) {
-        	for (AdvMapLoc advLoc : launcherSpawnLocs) {
-        		if (rc.canBuildRobot(RobotType.LAUNCHER, advLoc.loc)){
-                    rc.buildRobot(RobotType.LAUNCHER, advLoc.loc);
-                    break;
-                }
-        	}
-        }
+        
         //Find Nearby Wells
         WellInfo[] nearWell = rc.senseNearbyWells();
-        ArrayList<AdvMapLoc> carrierSpawnLocs = locationsAround(rc, me, centerOfMap, rc.getType().actionRadiusSquared);
+        ArrayList<AdvMapLoc> carrierSpawnLocs = new ArrayList<AdvMapLoc>();
         if(nearWell.length > 0) {
         	MapLocation nearestWell = nearWell[0].getMapLocation();
         	carrierSpawnLocs = locationsAround(rc, me, nearestWell, rc.getType().actionRadiusSquared);
         } else {
         	carrierSpawnLocs = locationsAround(rc, me, me, rc.getType().actionRadiusSquared);
         }
+        
+      //Spawn Launcher Code
+        int centerWidth = Math.round(width/2);
+        int centerHeight = Math.round(height/2);
+        MapLocation centerOfMap = new MapLocation(centerWidth, centerHeight);
+        //ArrayList<AdvMapLoc> launcherSpawnLocs = locationsAround(rc, me, centerOfMap, rc.getType().actionRadiusSquared);
+        if(/*rc.getResourceAmount(ResourceType.MANA) >= 100 && rng.nextInt(4) != 4*/true) {
+        	for (AdvMapLoc advLoc : carrierSpawnLocs) {
+        		if (rc.canBuildRobot(RobotType.LAUNCHER, advLoc.loc)){
+                    rc.buildRobot(RobotType.LAUNCHER, advLoc.loc);
+                    break;
+                }
+        	}
+        }
+        
         //Direction targetAdWell = rc.getLocation().directionTo(nearestAdWell);
         //Build Carriers, if we can build carriers -- NEED TO CHANGE THIS LOGIC/ADD AND CONDITION
         //Get Array of Nearby Robots, Count the NUmber of Carriers
@@ -155,7 +158,7 @@ public strictfp class RobotPlayer {
                     }
                 }
             }
-        ///***ADJUST NUMBER OF CARRIERS HERE***///
+        ///ADJUST NUMBER OF CARRIERS HERE///
         if(carrierCounter <= 9){
             //System.out.println("Printing Carrier");
             //System.out.println("Printing Carrier, + " + carrierCounter);
@@ -163,6 +166,7 @@ public strictfp class RobotPlayer {
         		if(rc.canBuildRobot(RobotType.CARRIER, advLoc.loc)){
                     rc.buildRobot(RobotType.CARRIER, advLoc.loc);
                     rc.setIndicatorString("Building a carrier!");
+                    break;
                 }
         	}
         }
@@ -783,24 +787,9 @@ public strictfp class RobotPlayer {
         }
     }
     
-    public static MapLocation nearestToTarget(RobotController rc, MapLocation me, MapLocation loc, int radiusSquared) throws GameActionException {
-    	MapLocation[] visibleLoc = 	rc.getAllLocationsWithinRadiusSquared(me, radiusSquared);
-    	int nearestDist = 7201;
-    	MapLocation nearestToTarget = new MapLocation(-1, -1);
-    	for (MapLocation aLoc : visibleLoc) {
-    		int dist = aLoc.distanceSquaredTo(loc);
-    		if (dist < nearestDist) {
-    			nearestDist = dist;
-    			nearestToTarget = aLoc;
-    		}
-    	}
-    	return nearestToTarget;
-    }
-    
     public static ArrayList<AdvMapLoc> locationsAround(RobotController rc, MapLocation me, MapLocation loc, int radiusSquared) throws GameActionException {
     	MapLocation[] visibleLoc = 	rc.getAllLocationsWithinRadiusSquared(me, radiusSquared);
     	ArrayList<AdvMapLoc> scoredLocations = new ArrayList<AdvMapLoc>();
-    	int idx = 0;
     	for (MapLocation aLoc : visibleLoc) {
     		int dist = aLoc.distanceSquaredTo(loc);
     		scoredLocations.add(new AdvMapLoc(aLoc, dist));
