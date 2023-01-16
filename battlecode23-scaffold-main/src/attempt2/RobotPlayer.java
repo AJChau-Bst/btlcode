@@ -1,4 +1,4 @@
-package attempt1;
+package attempt2;
 
 import battlecode.common.*;
 
@@ -347,59 +347,68 @@ public strictfp class RobotPlayer {
         		}
         	}
         }
-        //If carrying an anchor and standing on a valid island, plant the anchor
+        
         if (rc.getAnchor() != null) {
-        	if(rc.canPlaceAnchor() == true) {
-            	if (rc.senseTeamOccupyingIsland(rc.senseIsland(me)) != rc.getTeam()) {
-            		rc.placeAnchor();
-            		rc.setIndicatorString("Planting an anchor!");
-            	}
-            	//Spread out, avoid other bots with anchors
-        	} else {
-        		if(friends.length > 0) {
-        			MapLocation nearestAnchorBot = new MapLocation(61,61);
-                	for(RobotInfo bot : friends){
-                		if(bot.getTotalAnchors() > 0) {
-                			if (me.distanceSquaredTo(bot.getLocation()) < me.distanceSquaredTo(nearestAnchorBot)){
-                            	nearestAnchorBot = bot.getLocation();
-                            }
-                		}
-                	}
-                	if (rc.onTheMap(nearestAnchorBot)) {
-                		flee(rc, nearestAnchorBot);
-                	}
-                }
+        	
         		//Scan for visible islands, determine which is closest, and move to it
         		int[] nearbyIslands = rc.senseNearbyIslands();
         		if (nearbyIslands.length > 0) {
-        			List<Integer> plantableIslands = new ArrayList<Integer>();
+        			ArrayList<Integer> plantableIslands = new ArrayList<Integer>();
             		for (int i : nearbyIslands) {
             			if (rc.senseTeamOccupyingIsland(i) != rc.getTeam()) {
             				plantableIslands.add(i);
             			}
             		}
-            		//plantableIslands.removeIf(Objects::isNull);
-            		MapLocation[] nearestIslandLoc = new MapLocation[plantableIslands.size()];
-            		int idx = 0;
-            		for (int j : plantableIslands) {
-            			MapLocation[] islandLocs = rc.senseNearbyIslandLocations(j);
-            			MapLocation nearestLoc = new MapLocation(61,61);
-            			for (MapLocation k : islandLocs) {
-            				if (me.distanceSquaredTo(k) < me.distanceSquaredTo(nearestLoc)) {
-            					nearestLoc = k;
-            				}
-            			}
-            			nearestIslandLoc[idx] = nearestLoc;
-            			idx++;
+            		if (plantableIslands.size() > 0) {
+                		MapLocation[] nearestIslandLoc = new MapLocation[plantableIslands.size()];
+                		int idx = 0;
+                		for (int j : plantableIslands) {
+                			MapLocation[] islandLocs = rc.senseNearbyIslandLocations(j);
+                			MapLocation nearestLoc = new MapLocation(61,61);
+                			for (MapLocation k : islandLocs) {
+                				if (me.distanceSquaredTo(k) < me.distanceSquaredTo(nearestLoc)) {
+                					nearestLoc = k;
+                				}
+                			}
+                			nearestIslandLoc[idx] = nearestLoc;
+                			idx++;
+                		}
+                		MapLocation nearestIsland = new MapLocation(61,61);
+                		for (MapLocation l : nearestIslandLoc) {
+                			if (me.distanceSquaredTo(l) < me.distanceSquaredTo(nearestIsland)) {
+                				nearestIsland = l;
+                			}
+                		}
+                		//If carrying an anchor and standing on a valid island, plant the anchor
+                		if(rc.canPlaceAnchor() == true) {
+                    		int islandHere = rc.senseIsland(nearestIsland);
+                    		if(islandHere == -1) {
+                    			System.out.println("oh no");
+                    		} else {
+                    			if (rc.senseTeamOccupyingIsland(islandHere) != rc.getTeam()) {
+                            		rc.placeAnchor();
+                            		rc.setIndicatorString("Planting an anchor!");
+                            	}
+                    		}
+                			
+                        	//Spread out, avoid other bots with anchors
+                    	} else {
+                    		if(friends.length > 0) {
+                    			MapLocation nearestAnchorBot = new MapLocation(61,61);
+                            	for(RobotInfo bot : friends){
+                            		if(bot.getTotalAnchors() > 0) {
+                            			if (me.distanceSquaredTo(bot.getLocation()) < me.distanceSquaredTo(nearestAnchorBot)){
+                                        	nearestAnchorBot = bot.getLocation();
+                                        }
+                            		}
+                            	}
+                            	if (rc.onTheMap(nearestAnchorBot)) {
+                            		flee(rc, nearestAnchorBot);
+                            	}
+                            }
+                		mooTwo(rc, nearestIsland);
+                		rc.setIndicatorString("Heading to an island!" + nearestIsland.x + " " + nearestIsland.y);
             		}
-            		MapLocation nearestIsland = new MapLocation(61,61);
-            		for (MapLocation l : nearestIslandLoc) {
-            			if (me.distanceSquaredTo(l) < me.distanceSquaredTo(nearestIsland)) {
-            				nearestIsland = l;
-            			}
-            		}
-            		mooTwo(rc, nearestIsland);
-            		rc.setIndicatorString("Heading to an island!" + nearestIsland.x + " " + nearestIsland.y);
         		}
         	}
         }
