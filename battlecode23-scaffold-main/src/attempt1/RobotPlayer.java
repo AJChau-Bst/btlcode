@@ -136,7 +136,7 @@ public strictfp class RobotPlayer {
         int centerHeight = Math.round(height/2);
         MapLocation centerOfMap = new MapLocation(centerWidth, centerHeight);
         //ArrayList<AdvMapLoc> launcherSpawnLocs = locationsAround(rc, me, centerOfMap, rc.getType().actionRadiusSquared);
-        if(/*rc.getResourceAmount(ResourceType.MANA) >= 100 && rng.nextInt(4) != 4*/true) {
+        if(rc.getResourceAmount(ResourceType.MANA) >= 100 && rng.nextInt(4) != 4) {
         	for (AdvMapLoc advLoc : carrierSpawnLocs) {
         		if (rc.canBuildRobot(RobotType.LAUNCHER, advLoc.loc)){
                     rc.buildRobot(RobotType.LAUNCHER, advLoc.loc);
@@ -792,7 +792,9 @@ public strictfp class RobotPlayer {
     	ArrayList<AdvMapLoc> scoredLocations = new ArrayList<AdvMapLoc>();
     	for (MapLocation aLoc : visibleLoc) {
     		int dist = aLoc.distanceSquaredTo(loc);
-    		scoredLocations.add(new AdvMapLoc(aLoc, dist));
+    		if (rc.senseMapInfo(aLoc).isPassable() && !rc.canSenseRobotAtLocation(aLoc)) {
+        		scoredLocations.add(new AdvMapLoc(aLoc, dist));
+    		}
     	}
     	Collections.sort(scoredLocations, Comparator.comparing(AdvMapLoc::getDist));
     	return scoredLocations;
