@@ -136,7 +136,7 @@ public strictfp class RobotPlayer {
         int centerHeight = Math.round(height/2);
         MapLocation centerOfMap = new MapLocation(centerWidth, centerHeight);
         //ArrayList<AdvMapLoc> launcherSpawnLocs = locationsAround(rc, me, centerOfMap, rc.getType().actionRadiusSquared);
-        if(rc.getResourceAmount(ResourceType.MANA) >= 100 && rng.nextInt(2000) > turnCount/2000) {
+        if(rc.getResourceAmount(ResourceType.MANA) >= 100 && rng.nextInt(2000) > turnCount) {
         	for (AdvMapLoc advLoc : carrierSpawnLocs) {
         		if (rc.canBuildRobot(RobotType.LAUNCHER, advLoc.loc)){
                     rc.buildRobot(RobotType.LAUNCHER, advLoc.loc);
@@ -232,7 +232,10 @@ public strictfp class RobotPlayer {
         int elAmt = rc.getResourceAmount(ResourceType.ELIXIR);
         int adAmt = rc.getResourceAmount(ResourceType.ADAMANTIUM);
         int maAmt = rc.getResourceAmount(ResourceType.MANA);
+        int anchors = rc.getNumAnchors(Anchor.STANDARD);
+        int accAnchors = rc.getNumAnchors(Anchor.ACCELERATING);
         int total = elAmt + adAmt + maAmt;
+        int weight = elAmt + adAmt + maAmt + anchors*40 + accAnchors*40;
         
         MapLocation preciseTarget = new MapLocation(61,61);
         
@@ -418,7 +421,7 @@ public strictfp class RobotPlayer {
         }
 
         //if wells nearby and not crowded, move to them
-        if(nearWell.length >= 1 && total < desiredResourceAmount){
+        if(nearWell.length >= 1 && weight < desiredResourceAmount){
     		MapLocation desiredWell = new MapLocation(61,61);
     		int bestWellScore = 200000;
         	for (WellInfo aWell : nearWell) {
@@ -634,7 +637,7 @@ public strictfp class RobotPlayer {
         float ty = y - halfheight;
         tx = tx * -1;
         ty = ty * -1;
-        x = Math.round(x + halfwidth);
+        x = Math.round(tx + halfwidth);
         y = Math.round(ty + halfheight);
         return new MapLocation(x,y);
 
