@@ -382,15 +382,11 @@ public strictfp class RobotPlayer {
                 		//If carrying an anchor and standing on a valid island, plant the anchor
                 		if(rc.canPlaceAnchor() == true) {
                     		int islandHere = rc.senseIsland(nearestIsland);
-                    		if(islandHere == -1) {
-                    			System.out.println("oh no");
-                    		} else {
-                    			if (rc.senseTeamOccupyingIsland(islandHere) != rc.getTeam()) {
-                            		rc.placeAnchor();
-                            		rc.setIndicatorString("Planting an anchor!");
-                            	}
+                    		int islandOn = rc.senseIsland(me);
+                    		if (islandHere == islandOn) {
+                    			rc.placeAnchor();
+                        		rc.setIndicatorString("Planting an anchor! " + islandHere);
                     		}
-                			
                         	//Spread out, avoid other bots with anchors
                     	} else {
                     		if(friends.length > 0) {
