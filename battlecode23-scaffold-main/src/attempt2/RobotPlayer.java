@@ -449,7 +449,7 @@ public strictfp class RobotPlayer {
         				carrierCount++;
         			}
         		}
-        		int wellScore = ((me.distanceSquaredTo(hqs[nearHQidx]) + me.distanceSquaredTo(wellLoc)) * Math.max(Math.round(rc.getRoundNum()/500), (int) Math.floor((crowdSize / 2))) ) ;
+        		int wellScore = ((me.distanceSquaredTo(hqs[nearHQidx]) + me.distanceSquaredTo(wellLoc)) * Math.max((int) Math.floor(rc.getRoundNum()/500) + 1, (int) Math.floor((crowdSize / 2))) ) ;
         		if (carrierCount > 8) {
         			if (aWell.getResourceType() == ResourceType.ADAMANTIUM) {
         				wellScore = Math.round(wellScore*2);
@@ -469,7 +469,7 @@ public strictfp class RobotPlayer {
         	}
         	if (rc.onTheMap(desiredWell)) {
     			mooTwo(rc, desiredWell);
-    			rc.setIndicatorString("Moving to well!" + desiredWell.x + " " + desiredWell.y);
+    			rc.setIndicatorString("Moving to well!" + desiredWell.x + " " + desiredWell.y + " " + bestWellScore);
         	} else {
         		rc.setIndicatorString("Looking for another well!");
         		carrierDispersion(rc, edges);
@@ -701,6 +701,34 @@ public strictfp class RobotPlayer {
                 }
             }
         }
+        
+        //stick together if doing nothing else
+        if (rc.isMovementReady()) {
+        	ArrayList<RobotInfo> fellows = new ArrayList<RobotInfo>();
+            for (RobotInfo aBot : friends) {
+            	if (aBot.getType() == RobotType.LAUNCHER) {
+            		fellows.add(aBot);
+            		if (fellows.size() > 5) {
+            			break;
+            		}
+            	}
+            }
+            MapLocation nearestFriend = new MapLocation(-1,-1);
+            int friendDist = 7201;
+            if (fellows.size() > 0) {
+            	for (RobotInfo aBot : fellows) {
+            		dist = me.distanceSquaredTo(aBot.location);
+            		if (dist < friendDist) {
+            			friendDist = dist;
+            			nearestFriend = aBot.location;
+            		}
+            	}
+            }
+            if (rc.onTheMap(nearestFriend)) {
+            	mooTwo(rc, nearestFriend);
+            }
+        }
+        
         
         /*rc.setIndicatorString("Moving to center of map - " + centerOfMap.toString());
         if(me.equals(centerOfMap) || me.isAdjacentTo(centerOfMap)){
