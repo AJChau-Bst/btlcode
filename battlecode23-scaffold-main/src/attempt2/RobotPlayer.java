@@ -121,25 +121,26 @@ public strictfp class RobotPlayer {
         MapLocation me = rc.getLocation();
         int width = rc.getMapWidth();
         int height = rc.getMapHeight();
-
-        
-        //Find Nearby Wells
-        WellInfo[] nearWell = rc.senseNearbyWells();
-        ArrayList<AdvMapLoc> carrierSpawnLocs = new ArrayList<AdvMapLoc>();
-        if(nearWell.length > 0) {
-        	MapLocation nearestWell = nearWell[0].getMapLocation();
-        	carrierSpawnLocs = locationsAround(rc, me, nearestWell, rc.getType().actionRadiusSquared);
-        } else {
-        	carrierSpawnLocs = locationsAround(rc, me, me, rc.getType().actionRadiusSquared);
-        }
-        
-      //Spawn Launcher Code
         int centerWidth = Math.round(width/2);
         int centerHeight = Math.round(height/2);
         MapLocation centerOfMap = new MapLocation(centerWidth, centerHeight);
+        Team friendly = rc.getTeam();
+
+        
+        //Find Nearby Wells
+        RobotInfo[] enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, friendly.opponent());
+        ArrayList<AdvMapLoc> spawnLocs = new ArrayList<AdvMapLoc>();
+        if(enemies.length > 0) {
+        	spawnLocs = locationsAround(rc, me, centerOfMap, rc.getType().actionRadiusSquared);
+        	Collections.reverse(spawnLocs);
+        } else {
+        	spawnLocs = locationsAround(rc, me, centerOfMap, rc.getType().actionRadiusSquared);
+        }
+        
+      //Spawn Launcher Code
         //ArrayList<AdvMapLoc> launcherSpawnLocs = locationsAround(rc, me, centerOfMap, rc.getType().actionRadiusSquared);
         if(rc.getResourceAmount(ResourceType.MANA) >= 100 && rng.nextInt(2000) > turnCount) {
-        	for (AdvMapLoc advLoc : carrierSpawnLocs) {
+        	for (AdvMapLoc advLoc : spawnLocs) {
         		if (rc.canBuildRobot(RobotType.LAUNCHER, advLoc.loc)){
                     rc.buildRobot(RobotType.LAUNCHER, advLoc.loc);
                     break;
@@ -151,7 +152,6 @@ public strictfp class RobotPlayer {
         //Build Carriers, if we can build carriers -- NEED TO CHANGE THIS LOGIC/ADD AND CONDITION
         //Get Array of Nearby Robots, Count the NUmber of Carriers
         int carrierCounter = 0;
-        Team friendly = rc.getTeam();
         RobotInfo[] friends = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, friendly);
         if(friends.length > 0) {
             for(RobotInfo bot : friends){
@@ -163,10 +163,11 @@ public strictfp class RobotPlayer {
             }
         }
         ///ADJUST NUMBER OF CARRIERS HERE///
-        if(carrierCounter <= 18){
+        double mapSizeAdjust = Math.sqrt(rc.getMapWidth()*rc.getMapHeight());
+        if(carrierCounter <= mapSizeAdjust){
             //System.out.println("Printing Carrier");
             //System.out.println("Printing Carrier, + " + carrierCounter);
-        	for (AdvMapLoc advLoc : carrierSpawnLocs) {
+        	for (AdvMapLoc advLoc : spawnLocs) {
         		if(rc.canBuildRobot(RobotType.CARRIER, advLoc.loc)){
                     rc.buildRobot(RobotType.CARRIER, advLoc.loc);
                     rc.setIndicatorString("Building a carrier!");
@@ -211,7 +212,7 @@ public strictfp class RobotPlayer {
         			rc.buildAnchor(Anchor.ACCELERATING);
         			rc.setIndicatorString("Building an achor!");
         		}
-        	} else if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 600 && rc.getResourceAmount(ResourceType.MANA) >= 100) {
+        	} else if (rc.getResourceAmount(ResourceType.ADAMANTIUM) >= 190 && rc.getResourceAmount(ResourceType.MANA) >= 100) {
         		if (rc.canBuildAnchor(Anchor.STANDARD)) {
 	                rc.buildAnchor(Anchor.STANDARD);
 	                rc.setIndicatorString("Building an anchor!");
@@ -267,10 +268,15 @@ public strictfp class RobotPlayer {
                 	if (me.distanceSquaredTo(botLoc) < me.distanceSquaredTo(nearestEnemy)) {
                 		nearestEnemy = botLoc;
                 	}
+                } else if (rc.getHealth() < rc.getType().getMaxHealth() && bot.type != RobotType.HEADQUARTERS) {
+                	MapLocation botLoc = bot.getLocation(); 
+                	if (me.distanceSquaredTo(botLoc) < me.distanceSquaredTo(nearestEnemy)) {
+                		nearestEnemy = botLoc;
+                	}
                 }
         	}
         	if (rc.onTheMap(nearestEnemy)) {
-        		if (total > 14) {
+        		if (total >= 5) {
         			if(rc.canAttack(nearestEnemy)) {
         				rc.attack(nearestEnemy);
                 		rc.setIndicatorString("Projectile poop!");
@@ -393,6 +399,9 @@ public strictfp class RobotPlayer {
                     		rc.setIndicatorString("Planting an anchor! " + islandHere);
                 		}
                     	//Spread out, avoid other bots with anchors
+                	} else if (rc.onTheMap(nearestIsland)) {
+                		mooTwo(rc, nearestIsland);
+                		rc.setIndicatorString("Heading to an island!" + nearestIsland.x + " " + nearestIsland.y);
                 	} else {
                 		if(friends.length > 0) {
                 			MapLocation nearestAnchorBot = new MapLocation(61,61);
@@ -412,8 +421,6 @@ public strictfp class RobotPlayer {
                         		flee(rc, nearestAnchorBot);
                         	}
                         }
-            		mooTwo(rc, nearestIsland);
-            		rc.setIndicatorString("Heading to an island!" + nearestIsland.x + " " + nearestIsland.y);
             		}
         		}
         	}
@@ -422,21 +429,35 @@ public strictfp class RobotPlayer {
         WellInfo[] nearWell = rc.senseNearbyWells();
         
         //if adjacent to well, start fucking collecting
+        boolean collecting = false;
+        boolean collectHere = true;
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
                 MapLocation wellLocation = new MapLocation(me.x + dx, me.y + dy);
                 if (rc.canCollectResource(wellLocation, -1)){
-                    rc.collectResource(wellLocation, -1);
-                    rc.setIndicatorString("Collecting, now have, AD:" + 
-                    rc.getResourceAmount(ResourceType.ADAMANTIUM) + 
-                    " MN: " + rc.getResourceAmount(ResourceType.MANA) + 
-                    " EX: " + rc.getResourceAmount(ResourceType.ELIXIR));
+                	if (hqSpotted) {
+            			if(rc.canSenseLocation(preciseTarget)) {
+            				if (rc.senseRobotAtLocation(preciseTarget).getResourceAmount(ResourceType.ADAMANTIUM) > 190) {
+                				if (rc.senseWell(wellLocation).getResourceType() == ResourceType.ADAMANTIUM) {
+                					collectHere = false;
+                				}
+                			}
+            			}
+            		}
+                	if (collectHere) {
+                        rc.collectResource(wellLocation, -1);
+                        rc.setIndicatorString("Collecting, now have, AD:" + 
+                        rc.getResourceAmount(ResourceType.ADAMANTIUM) + 
+                        " MN: " + rc.getResourceAmount(ResourceType.MANA) + 
+                        " EX: " + rc.getResourceAmount(ResourceType.ELIXIR));
+                        collecting = true;
+                	}
                 }
             }
         }
 
         //if wells nearby and not crowded, move to them
-        if(nearWell.length >= 1 && weight < desiredResourceAmount){
+        if(nearWell.length >= 1 && weight < desiredResourceAmount && !collecting){
     		MapLocation desiredWell = new MapLocation(61,61);
     		int bestWellScore = 200000;
         	for (WellInfo aWell : nearWell) {
@@ -449,7 +470,7 @@ public strictfp class RobotPlayer {
         				carrierCount++;
         			}
         		}
-        		int wellScore = ((me.distanceSquaredTo(hqs[nearHQidx]) + me.distanceSquaredTo(wellLoc)) * Math.max((int) Math.floor(rc.getRoundNum()/500) + 1, (int) Math.floor((crowdSize / 2))) ) ;
+        		int wellScore = ((wellLoc.distanceSquaredTo(hqs[nearHQidx]) + me.distanceSquaredTo(wellLoc)) * Math.max((int) Math.floor(rc.getRoundNum()/1000) + 1, (int) Math.floor((crowdSize / 2))) ) ;
         		if (carrierCount > 8) {
         			if (aWell.getResourceType() == ResourceType.ADAMANTIUM) {
         				wellScore = Math.round(wellScore*2);
@@ -457,7 +478,7 @@ public strictfp class RobotPlayer {
         		}
         		if (hqSpotted) {
         			if(rc.canSenseLocation(preciseTarget)) {
-        				if (rc.senseRobotAtLocation(preciseTarget).getResourceAmount(ResourceType.ADAMANTIUM) > 600) {
+        				if (rc.senseRobotAtLocation(preciseTarget).getResourceAmount(ResourceType.ADAMANTIUM) > 190) {
             				wellScore = 200001;
             			}
         			}
@@ -474,7 +495,7 @@ public strictfp class RobotPlayer {
         		rc.setIndicatorString("Looking for another well!");
         		carrierDispersion(rc, edges);
         	}
-        } else {
+        } else if (!collecting) {
         	rc.setIndicatorString("Looking for another well!");
         	carrierDispersion(rc, edges);
         }
@@ -627,7 +648,7 @@ public strictfp class RobotPlayer {
             	} else if(nearWell.length > 0) {
             		flee(rc, nearestWell);
             	} else if (friendCount > 5) {
-            		if (turnCount < 250) {
+            		if (turnCount < 100) {
             			mooTwo(rc, centerOfMap);
             			rc.setIndicatorString("Pressuring center! " + centerOfMap.x + " " + centerOfMap.y);
             		} else {
@@ -638,7 +659,7 @@ public strictfp class RobotPlayer {
             } else {
             	if (friendCount >= 2) {
             		if (crowd <= 2) {
-            			if (turnCount < 250) {
+            			if (turnCount < 100) {
                 			mooTwo(rc, centerOfMap);
                 			rc.setIndicatorString("Pressuring center! " + centerOfMap.x + " " + centerOfMap.y);
                 		} else {
@@ -706,7 +727,7 @@ public strictfp class RobotPlayer {
         if (rc.isMovementReady()) {
         	ArrayList<RobotInfo> fellows = new ArrayList<RobotInfo>();
             for (RobotInfo aBot : friends) {
-            	if (aBot.getType() == RobotType.LAUNCHER) {
+            	if (aBot.getType() == RobotType.LAUNCHER && aBot.location.distanceSquaredTo(me) > 4) {
             		fellows.add(aBot);
             		if (fellows.size() > 5) {
             			break;
