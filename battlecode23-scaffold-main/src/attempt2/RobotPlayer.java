@@ -113,6 +113,8 @@ public strictfp class RobotPlayer {
      * Run a single turn for a Headquarters.
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
      */
+
+	
     static void runHeadquarters(RobotController rc) throws GameActionException {
         //Declare Variables
         int lookingForIndex = 63;
@@ -154,12 +156,14 @@ public strictfp class RobotPlayer {
         if(friends.length > 0) {
             for(RobotInfo bot : friends){
                 if (bot.type == RobotType.CARRIER){
-                    carrierCounter = carrierCounter + 1;
-                    }
+                	if (bot.getTotalAnchors() == 0) {
+                        carrierCounter++;
+                	}
                 }
             }
+        }
         ///ADJUST NUMBER OF CARRIERS HERE///
-        if(carrierCounter <= 9){
+        if(carrierCounter <= 18){
             //System.out.println("Printing Carrier");
             //System.out.println("Printing Carrier, + " + carrierCounter);
         	for (AdvMapLoc advLoc : carrierSpawnLocs) {
@@ -227,6 +231,7 @@ public strictfp class RobotPlayer {
         MapLocation me = rc.getLocation();
         int desiredResourceAmount = 40;
     	boolean hqSpotted = false;
+    	ArrayList<MapLocation> edges = senseMapEdges(rc, width, height);
         
         //If Robot is full, go to the closest HQ to deposit.
         int elAmt = rc.getResourceAmount(ResourceType.ELIXIR);
@@ -267,7 +272,7 @@ public strictfp class RobotPlayer {
         	if (rc.onTheMap(nearestEnemy)) {
         		if (total > 14) {
         			if(rc.canAttack(nearestEnemy)) {
-        				fireZeLaser(rc, nearestEnemy);
+        				rc.attack(nearestEnemy);
                 		rc.setIndicatorString("Projectile poop!");
         			} else {
                 		rc.setIndicatorString("AHHHHHHHHHHHHHHHHHHHHH");
@@ -350,60 +355,65 @@ public strictfp class RobotPlayer {
         
         if (rc.getAnchor() != null) {
         	
-        		//Scan for visible islands, determine which is closest, and move to it
-        		int[] nearbyIslands = rc.senseNearbyIslands();
-        		if (nearbyIslands.length > 0) {
-        			ArrayList<Integer> plantableIslands = new ArrayList<Integer>();
-            		for (int i : nearbyIslands) {
-            			if (rc.senseTeamOccupyingIsland(i) != rc.getTeam()) {
-            				plantableIslands.add(i);
+    		//Scan for visible islands, determine which is closest, and move to it
+    		int[] nearbyIslands = rc.senseNearbyIslands();
+    		if (nearbyIslands.length > 0) {
+    			ArrayList<Integer> plantableIslands = new ArrayList<Integer>();
+        		for (int i : nearbyIslands) {
+        			if (rc.senseTeamOccupyingIsland(i) != rc.getTeam()) {
+        				plantableIslands.add(i);
+        			}
+        		}
+        		if (plantableIslands.size() > 0) {
+            		MapLocation[] nearestIslandLoc = new MapLocation[plantableIslands.size()];
+            		int idx = 0;
+            		for (int j : plantableIslands) {
+            			MapLocation[] islandLocs = rc.senseNearbyIslandLocations(j);
+            			MapLocation nearestLoc = new MapLocation(61,61);
+            			for (MapLocation k : islandLocs) {
+            				if (me.distanceSquaredTo(k) < me.distanceSquaredTo(nearestLoc)) {
+            					nearestLoc = k;
+            				}
+            			}
+            			nearestIslandLoc[idx] = nearestLoc;
+            			idx++;
+            		}
+            		MapLocation nearestIsland = new MapLocation(61,61);
+            		for (MapLocation l : nearestIslandLoc) {
+            			if (me.distanceSquaredTo(l) < me.distanceSquaredTo(nearestIsland)) {
+            				nearestIsland = l;
             			}
             		}
-            		if (plantableIslands.size() > 0) {
-                		MapLocation[] nearestIslandLoc = new MapLocation[plantableIslands.size()];
-                		int idx = 0;
-                		for (int j : plantableIslands) {
-                			MapLocation[] islandLocs = rc.senseNearbyIslandLocations(j);
-                			MapLocation nearestLoc = new MapLocation(61,61);
-                			for (MapLocation k : islandLocs) {
-                				if (me.distanceSquaredTo(k) < me.distanceSquaredTo(nearestLoc)) {
-                					nearestLoc = k;
-                				}
-                			}
-                			nearestIslandLoc[idx] = nearestLoc;
-                			idx++;
+            		//If carrying an anchor and standing on a valid island, plant the anchor
+            		if(rc.canPlaceAnchor() == true) {
+                		int islandHere = rc.senseIsland(nearestIsland);
+                		int islandOn = rc.senseIsland(me);
+                		if (islandHere == islandOn) {
+                			rc.placeAnchor();
+                    		rc.setIndicatorString("Planting an anchor! " + islandHere);
                 		}
-                		MapLocation nearestIsland = new MapLocation(61,61);
-                		for (MapLocation l : nearestIslandLoc) {
-                			if (me.distanceSquaredTo(l) < me.distanceSquaredTo(nearestIsland)) {
-                				nearestIsland = l;
-                			}
-                		}
-                		//If carrying an anchor and standing on a valid island, plant the anchor
-                		if(rc.canPlaceAnchor() == true) {
-                    		int islandHere = rc.senseIsland(nearestIsland);
-                    		int islandOn = rc.senseIsland(me);
-                    		if (islandHere == islandOn) {
-                    			rc.placeAnchor();
-                        		rc.setIndicatorString("Planting an anchor! " + islandHere);
-                    		}
-                        	//Spread out, avoid other bots with anchors
-                    	} else {
-                    		if(friends.length > 0) {
-                    			MapLocation nearestAnchorBot = new MapLocation(61,61);
-                            	for(RobotInfo bot : friends){
-                            		if(bot.getTotalAnchors() > 0) {
-                            			if (me.distanceSquaredTo(bot.getLocation()) < me.distanceSquaredTo(nearestAnchorBot)){
-                                        	nearestAnchorBot = bot.getLocation();
-                                        }
-                            		}
-                            	}
-                            	if (rc.onTheMap(nearestAnchorBot)) {
-                            		flee(rc, nearestAnchorBot);
-                            	}
-                            }
-                		mooTwo(rc, nearestIsland);
-                		rc.setIndicatorString("Heading to an island!" + nearestIsland.x + " " + nearestIsland.y);
+                    	//Spread out, avoid other bots with anchors
+                	} else {
+                		if(friends.length > 0) {
+                			MapLocation nearestAnchorBot = new MapLocation(61,61);
+                        	for(RobotInfo bot : friends){
+                        		if(bot.getTotalAnchors() > 0) {
+                        			if (me.distanceSquaredTo(bot.getLocation()) < me.distanceSquaredTo(nearestAnchorBot)){
+                                    	nearestAnchorBot = bot.getLocation();
+                                    }
+                        		}
+                        	}
+                        	for (MapLocation aLoc : edges) {
+                        		if (me.distanceSquaredTo(aLoc) < me.distanceSquaredTo(nearestAnchorBot)){
+                                	nearestAnchorBot = aLoc;
+                                }
+                        	}
+                        	if (rc.onTheMap(nearestAnchorBot)) {
+                        		flee(rc, nearestAnchorBot);
+                        	}
+                        }
+            		mooTwo(rc, nearestIsland);
+            		rc.setIndicatorString("Heading to an island!" + nearestIsland.x + " " + nearestIsland.y);
             		}
         		}
         	}
@@ -433,7 +443,18 @@ public strictfp class RobotPlayer {
         		MapLocation wellLoc = aWell.getMapLocation();
         		RobotInfo[] atWell = rc.senseNearbyRobots(wellLoc, 4, friendly);
         		int crowdSize = atWell.length;
+        		int carrierCount = 0;
+        		for (RobotInfo aBot : atWell) {
+        			if (aBot.getType() == RobotType.CARRIER) {
+        				carrierCount++;
+        			}
+        		}
         		int wellScore = ((me.distanceSquaredTo(hqs[nearHQidx]) + me.distanceSquaredTo(wellLoc)) * Math.max(1, (int) Math.floor((crowdSize / 2))) ) ;
+        		if (carrierCount > 10) {
+        			if (aWell.getResourceType() == ResourceType.ADAMANTIUM) {
+        				wellScore = Math.round(wellScore/2);
+        			}
+        		}
         		if (wellScore < bestWellScore) {
         			desiredWell = wellLoc;
         			bestWellScore = wellScore;
@@ -453,6 +474,11 @@ public strictfp class RobotPlayer {
         		if (me.distanceSquaredTo(aBot.getLocation()) < me.distanceSquaredTo(nearestBot)) {
         			nearestBot = aBot.getLocation();
         		}
+        	}
+        	for (MapLocation aLoc : edges) {
+        		if (me.distanceSquaredTo(aLoc) < me.distanceSquaredTo(nearestBot)){
+        			nearestBot = aLoc;
+                }
         	}
         	if (rc.onTheMap(nearestBot)) {
         		flee(rc, nearestBot);
@@ -560,71 +586,87 @@ public strictfp class RobotPlayer {
         }
         
         //if see enemy, shoot
+        ArrayList<ScoredBot> scoredEnemies = new ArrayList<ScoredBot>();
+        boolean attacking = false;
         if (enemies.length > 0){
             for(RobotInfo bot : enemies) {
                 if(bot.type == RobotType.DESTABILIZER){
-                	fireZeLaser(rc, bot.location);
-                    rc.setIndicatorString("Attacking a destabilizer!");
+                	int botDist = me.distanceSquaredTo(bot.location);
+                	scoredEnemies.add(new ScoredBot(bot, botDist));
+                } else if(bot.type == RobotType.BOOSTER){
+                	int botDist = me.distanceSquaredTo(bot.location);
+                	scoredEnemies.add(new ScoredBot(bot, botDist * 2));
+                } else if(bot.type == RobotType.LAUNCHER){
+                	int botDist = me.distanceSquaredTo(bot.location);
+                	scoredEnemies.add(new ScoredBot(bot, botDist * 3));
+                } else if(bot.type == RobotType.HEADQUARTERS){
+                	//haha no
+                } else {
+                	int botDist = me.distanceSquaredTo(bot.location);
+                	scoredEnemies.add(new ScoredBot(bot, botDist * 4));
                 }
             }
-            for(RobotInfo bot : enemies) {
-            	if(bot.type == RobotType.BOOSTER) {
-                	fireZeLaser(rc, bot.location);
-                    rc.setIndicatorString("Attacking a booster!");
-                }
+            scoredEnemies.sort(Comparator.comparing(ScoredBot::getScore));
+            for (ScoredBot aBot : scoredEnemies) {
+            	if(rc.canAttack(aBot.getLocation())){
+                    rc.attack(aBot.getLocation());
+                    flee(rc, aBot.getLocation());
+                    attacking = true;
+                    break;
+                } 
             }
-            for(RobotInfo bot : enemies) {
-            	if(bot.type == RobotType.LAUNCHER) {
-                	fireZeLaser(rc, bot.location);
-                    rc.setIndicatorString("Attacking a launcher!");
-                }
-            }
-            for(RobotInfo bot : enemies) {
-            	if(bot.type != RobotType.HEADQUARTERS) {
-                	fireZeLaser(rc, bot.location);
-                    rc.setIndicatorString("Attacking a civilian!");
-                }
+            if (!attacking) {
+            	for (ScoredBot aBot : scoredEnemies) {
+            		if (rc.canActLocation(aBot.getLocation())) {
+                        flee(rc, aBot.getLocation());
+                        break;
+                    } else {
+                    	//mooTwo(rc, aBot.getLocation());
+                    }
+            	}
             }
         }
-        
-        if (hqSpotted) {
-        	if (me.isAdjacentTo(base)) {
-        		mooTwo(rc, enemyHQs[nearEnemyHQidx]);
-        	} else if(wallSize >= 3) {
-        		mooTwo(rc, enemyHQs[nearEnemyHQidx]);
-        	} else if(nearWell.length > 0) {
-        		flee(rc, nearestWell);
-        	} else if (friendCount > 5) {
-        		if (turnCount < 250) {
-        			mooTwo(rc, centerOfMap);
-        			rc.setIndicatorString("Pressuring center! " + centerOfMap.x + " " + centerOfMap.y);
-        		} else {
-                    mooTwo(rc, enemyHQs[nearEnemyHQidx]);
-                    rc.setIndicatorString("Marching to enemy HQ! " + enemyHQs[nearEnemyHQidx].x + " " + enemyHQs[nearEnemyHQidx].y);
-        		}
-        	}
-        } else {
-        	if (friendCount >= 2) {
-        		if (crowd <= 2) {
-        			if (turnCount < 250) {
+        if (scoredEnemies.size() < 1) {
+        	if (hqSpotted) {
+            	if (me.isAdjacentTo(base)) {
+            		mooTwo(rc, enemyHQs[nearEnemyHQidx]);
+            	} else if(wallSize >= 3) {
+            		mooTwo(rc, enemyHQs[nearEnemyHQidx]);
+            	} else if(nearWell.length > 0) {
+            		flee(rc, nearestWell);
+            	} else if (friendCount > 5) {
+            		if (turnCount < 250) {
             			mooTwo(rc, centerOfMap);
             			rc.setIndicatorString("Pressuring center! " + centerOfMap.x + " " + centerOfMap.y);
             		} else {
-	            		mooTwo(rc, enemyHQs[nearEnemyHQidx]);
-	            		rc.setIndicatorString("Marching to enemy HQ! " + enemyHQs[nearEnemyHQidx].x + " " + enemyHQs[nearEnemyHQidx].y);
+                        mooTwo(rc, enemyHQs[nearEnemyHQidx]);
+                        rc.setIndicatorString("Marching to enemy HQ! " + enemyHQs[nearEnemyHQidx].x + " " + enemyHQs[nearEnemyHQidx].y);
             		}
-        		} else if(nearEnemyHQidx == farEnemyHQidx) { 
-        			mooTwo(rc, hqs[nearHQidx]);
+            	}
+            } else {
+            	if (friendCount >= 2) {
+            		if (crowd <= 2) {
+            			if (turnCount < 250) {
+                			mooTwo(rc, centerOfMap);
+                			rc.setIndicatorString("Pressuring center! " + centerOfMap.x + " " + centerOfMap.y);
+                		} else {
+    	            		mooTwo(rc, enemyHQs[nearEnemyHQidx]);
+    	            		rc.setIndicatorString("Marching to enemy HQ! " + enemyHQs[nearEnemyHQidx].x + " " + enemyHQs[nearEnemyHQidx].y);
+                		}
+            		} else if(nearEnemyHQidx == farEnemyHQidx) { 
+            			mooTwo(rc, hqs[nearHQidx]);
+                		rc.setIndicatorString("Returning to HQ! " + hqs[nearHQidx].x + " " + hqs[nearHQidx].y);
+            		} else {
+            			mooTwo(rc, enemyHQs[farEnemyHQidx]);
+                		rc.setIndicatorString("Marching to new enemy HQ! " + enemyHQs[farEnemyHQidx].x + " " + enemyHQs[farEnemyHQidx].y);
+            		}
+            	} else {
+            		mooTwo(rc, hqs[nearHQidx]);
             		rc.setIndicatorString("Returning to HQ! " + hqs[nearHQidx].x + " " + hqs[nearHQidx].y);
-        		} else {
-        			mooTwo(rc, enemyHQs[farEnemyHQidx]);
-            		rc.setIndicatorString("Marching to new enemy HQ! " + enemyHQs[farEnemyHQidx].x + " " + enemyHQs[farEnemyHQidx].y);
-        		}
-        	} else {
-        		mooTwo(rc, hqs[nearHQidx]);
-        		rc.setIndicatorString("Returning to HQ! " + hqs[nearHQidx].x + " " + hqs[nearHQidx].y);
-        	}
+            	}
+            }
         }
+        
         /*rc.setIndicatorString("Moving to center of map - " + centerOfMap.toString());
         if(me.equals(centerOfMap) || me.isAdjacentTo(centerOfMap)){
             mooTwo(rc, enemyHQs[nearHQidx]);
@@ -785,16 +827,6 @@ public strictfp class RobotPlayer {
     	}
     }
     
-    public static void fireZeLaser(RobotController rc, MapLocation loc) throws GameActionException {
-    	if(rc.canAttack(loc)){
-            rc.attack(loc);
-        } else if (rc.canActLocation(loc)) {
-            flee(rc, loc);
-        } else {
-        	//mooTwo(rc, loc);
-        }
-    }
-    
     public static ArrayList<AdvMapLoc> locationsAround(RobotController rc, MapLocation me, MapLocation loc, int radiusSquared) throws GameActionException {
     	MapLocation[] visibleLoc = 	rc.getAllLocationsWithinRadiusSquared(me, radiusSquared);
     	ArrayList<AdvMapLoc> scoredLocations = new ArrayList<AdvMapLoc>();
@@ -804,8 +836,32 @@ public strictfp class RobotPlayer {
         		scoredLocations.add(new AdvMapLoc(aLoc, dist));
     		}
     	}
-    	Collections.sort(scoredLocations, Comparator.comparing(AdvMapLoc::getDist));
+    	scoredLocations.sort(Comparator.comparing(AdvMapLoc::getDist));
     	return scoredLocations;
+    }
+    
+    public static ArrayList<MapLocation> senseMapEdges(RobotController rc, int width, int height) {
+    	MapLocation me = rc.getLocation();
+    	int x = me.x;
+    	int y = me.y;
+    	MapLocation north = new MapLocation(x, height);
+    	MapLocation south = new MapLocation(x, 0);
+    	MapLocation east = new MapLocation(width, y);
+    	MapLocation west = new MapLocation(0, y);
+    	ArrayList<MapLocation> locs = new ArrayList<MapLocation>();
+    	if (rc.canSenseLocation(north)) {
+    		locs.add(north);
+    	}
+    	if (rc.canSenseLocation(south)) {
+    		locs.add(south);
+    	}
+    	if (rc.canSenseLocation(east)) {
+    		locs.add(east);
+    	}
+    	if (rc.canSenseLocation(west)) {
+    		locs.add(west);
+    	}
+    	return locs;
     }
 } 
 
@@ -820,5 +876,25 @@ class AdvMapLoc {
 	
 	public int getDist() {
 		return this.dist;
+	}
+}
+
+class ScoredBot {
+	RobotInfo info;
+	int score;
+	
+	public ScoredBot(RobotInfo info, int score) {
+		this.info = info;
+		this.score = score;
+	}
+	
+	public RobotInfo getInfo() {
+		return this.info;
+	}
+	public int getScore() {
+		return this.score;
+	}
+	public MapLocation getLocation() {
+		return this.info.getLocation();
 	}
 }
