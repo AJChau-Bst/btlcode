@@ -263,7 +263,7 @@ public strictfp class RobotPlayer {
         if(enemies.length > 0) {
         	MapLocation nearestEnemy = new MapLocation(61,61);
         	for(RobotInfo bot : enemies){
-                if (bot.type != RobotType.CARRIER && bot.type != RobotType.AMPLIFIER && bot.type != RobotType.HEADQUARTERS){
+                if (bot.type != RobotType.CARRIER && bot.type != RobotType.AMPLIFIER){
                 	MapLocation botLoc = bot.getLocation(); 
                 	if (me.distanceSquaredTo(botLoc) < me.distanceSquaredTo(nearestEnemy)) {
                 		nearestEnemy = botLoc;
@@ -519,6 +519,9 @@ public strictfp class RobotPlayer {
         MapLocation centerOfMap = new MapLocation(centerWidth, centerHeight);
         //Direction launcherDir = me.directionTo(centerOfMap);
         
+
+        MapLocation nearestFriend = new MapLocation(-1,-1);
+        int friendDist = 7201;
         
         //Find friendly HQs
         MapLocation base = new MapLocation(61,61);
@@ -526,6 +529,7 @@ public strictfp class RobotPlayer {
         boolean hqSpotted = false;
         Team friendly = rc.getTeam();
         int friendCount = 0; //oof
+        int friendlyNeighbors = 0;
         RobotInfo[] friends = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, friendly);
         if(friends.length > 0) {
         	for(RobotInfo bot : friends){
@@ -535,6 +539,14 @@ public strictfp class RobotPlayer {
                 	hqSpotted = true;
                 } else if (bot.type == RobotType.LAUNCHER) { //Count friendly army
                 	friendCount++;
+                	int dist = me.distanceSquaredTo(bot.location);
+                	if (dist < friendDist) {
+            			friendDist = dist;
+            			nearestFriend = bot.location;
+            		}
+                	if (dist <= 4) {
+                		friendlyNeighbors++;
+                	}
                 } else if (bot.type == RobotType.BOOSTER) {
                 	friendCount+=3;
                 } else if (bot.type == RobotType.DESTABILIZER) {
@@ -615,7 +627,7 @@ public strictfp class RobotPlayer {
                 	int botDist = me.distanceSquaredTo(bot.location);
                 	scoredEnemies.add(new ScoredBot(bot, botDist * 3));
                 } else if(bot.type == RobotType.HEADQUARTERS){
-                	//haha no
+                	flee(rc, bot.location);
                 } else {
                 	int botDist = me.distanceSquaredTo(bot.location);
                 	scoredEnemies.add(new ScoredBot(bot, botDist * 4));
@@ -633,7 +645,7 @@ public strictfp class RobotPlayer {
         		if (rc.canActLocation(aBot.getLocation())) {
                     flee(rc, aBot.getLocation());
                     break;
-                } else {
+                } else if (friendlyNeighbors > 0){
                 	mooTwo(rc, aBot.getLocation());
                 }
         	}
@@ -694,7 +706,7 @@ public strictfp class RobotPlayer {
                     	int botDist = me.distanceSquaredTo(bot.location);
                     	scoredEnemies.add(new ScoredBot(bot, botDist * 3 * health));
                     } else if(bot.type == RobotType.HEADQUARTERS){
-                    	//haha no
+                    	flee(rc, bot.location);
                     } else {
                     	int botDist = me.distanceSquaredTo(bot.location);
                     	scoredEnemies.add(new ScoredBot(bot, botDist * 4 * health));
@@ -721,29 +733,11 @@ public strictfp class RobotPlayer {
         
         //stick together if doing nothing else
         if (rc.isMovementReady()) {
-        	ArrayList<RobotInfo> fellows = new ArrayList<RobotInfo>();
-            for (RobotInfo aBot : friends) {
-            	if (aBot.getType() == RobotType.LAUNCHER && aBot.location.distanceSquaredTo(me) > 4) {
-            		fellows.add(aBot);
-            		if (fellows.size() > 5) {
-            			break;
-            		}
-            	}
-            }
-            MapLocation nearestFriend = new MapLocation(-1,-1);
-            int friendDist = 7201;
-            if (fellows.size() > 0) {
-            	for (RobotInfo aBot : fellows) {
-            		dist = me.distanceSquaredTo(aBot.location);
-            		if (dist < friendDist) {
-            			friendDist = dist;
-            			nearestFriend = aBot.location;
-            		}
-            	}
-            }
-            if (rc.onTheMap(nearestFriend)) {
-            	mooTwo(rc, nearestFriend);
-            }
+        	if (friendlyNeighbors < 1) {
+        		if (rc.onTheMap(nearestFriend)) {
+                	mooTwo(rc, nearestFriend);
+                }
+        	}
         }
         
         
