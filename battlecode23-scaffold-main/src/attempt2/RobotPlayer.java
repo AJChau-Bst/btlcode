@@ -435,14 +435,14 @@ public strictfp class RobotPlayer {
             for (int dy = -1; dy <= 1; dy++) {
                 MapLocation wellLocation = new MapLocation(me.x + dx, me.y + dy);
                 if (rc.canCollectResource(wellLocation, -1)){
-                	if (hqSpotted) {
-            			if(rc.canSenseLocation(preciseTarget)) {
-            				if (rc.senseRobotAtLocation(preciseTarget).getResourceAmount(ResourceType.ADAMANTIUM) > 190) {
-                				if (rc.senseWell(wellLocation).getResourceType() == ResourceType.ADAMANTIUM) {
-                					collectHere = false;
-                				}
-                			}
-            			}
+                	int adCount = 0;
+                	for (RobotInfo aBot : friends) {
+                		adCount += aBot.getResourceAmount(ResourceType.ADAMANTIUM);
+                	}
+    				if (adCount > 300) {
+        				if (rc.senseWell(wellLocation).getResourceType() == ResourceType.ADAMANTIUM) {
+        					collectHere = false;
+        				}
             		}
                 	if (collectHere) {
                         rc.collectResource(wellLocation, -1);
@@ -451,6 +451,9 @@ public strictfp class RobotPlayer {
                         " MN: " + rc.getResourceAmount(ResourceType.MANA) + 
                         " EX: " + rc.getResourceAmount(ResourceType.ELIXIR));
                         collecting = true;
+                        if (rc.canMove(me.directionTo(wellLocation))) {
+                        	mooTwo(rc,wellLocation);
+                        }
                 	}
                 }
             }
@@ -459,7 +462,7 @@ public strictfp class RobotPlayer {
         //if wells nearby and not crowded, move to them
         if(nearWell.length >= 1 && weight < desiredResourceAmount && !collecting){
     		MapLocation desiredWell = new MapLocation(61,61);
-    		int bestWellScore = 200000;
+    		int bestWellScore = 241;
         	for (WellInfo aWell : nearWell) {
         		MapLocation wellLoc = aWell.getMapLocation();
         		RobotInfo[] atWell = rc.senseNearbyRobots(wellLoc, 4, friendly);
@@ -471,9 +474,9 @@ public strictfp class RobotPlayer {
         			}
         		}
         		int wellScore = ((wellLoc.distanceSquaredTo(hqs[nearHQidx]) + me.distanceSquaredTo(wellLoc)) * Math.max((int) Math.floor(rc.getRoundNum()/1000) + 1, (int) Math.floor((crowdSize / 2))) ) ;
-        		if (carrierCount > 8) {
+        		if (carrierCount >= 8) {
         			if (aWell.getResourceType() == ResourceType.ADAMANTIUM) {
-        				wellScore = Math.round(wellScore*2);
+        				wellScore = Math.round(wellScore*10);
         			}
         		}
         		if (hqSpotted) {
@@ -600,7 +603,6 @@ public strictfp class RobotPlayer {
         
         //if see enemy, shoot
         ArrayList<ScoredBot> scoredEnemies = new ArrayList<ScoredBot>();
-        boolean attacking = false;
         if (enemies.length > 0){
             for(RobotInfo bot : enemies) {
                 if(bot.type == RobotType.DESTABILIZER){
@@ -624,20 +626,17 @@ public strictfp class RobotPlayer {
             	if(rc.canAttack(aBot.getLocation())){
                     rc.attack(aBot.getLocation());
                     flee(rc, aBot.getLocation());
-                    attacking = true;
                     break;
                 } 
             }
-            if (!attacking) {
-            	for (ScoredBot aBot : scoredEnemies) {
-            		if (rc.canActLocation(aBot.getLocation())) {
-                        flee(rc, aBot.getLocation());
-                        break;
-                    } else {
-                    	//mooTwo(rc, aBot.getLocation());
-                    }
-            	}
-            }
+        	for (ScoredBot aBot : scoredEnemies) {
+        		if (rc.canActLocation(aBot.getLocation())) {
+                    flee(rc, aBot.getLocation());
+                    break;
+                } else {
+                	mooTwo(rc, aBot.getLocation());
+                }
+        	}
         }
         if (scoredEnemies.size() < 1) {
         	if (hqSpotted) {
@@ -682,23 +681,23 @@ public strictfp class RobotPlayer {
         if (rc.getActionCooldownTurns() <= GameConstants.COOLDOWN_LIMIT) {
         	enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, enemy);
         	scoredEnemies = new ArrayList<ScoredBot>();
-            attacking = false;
             if (enemies.length > 0){
                 for(RobotInfo bot : enemies) {
+                	double health = bot.health / bot.getType().getMaxHealth();
                     if(bot.type == RobotType.DESTABILIZER){
                     	int botDist = me.distanceSquaredTo(bot.location);
-                    	scoredEnemies.add(new ScoredBot(bot, botDist));
+                    	scoredEnemies.add(new ScoredBot(bot, botDist * health));
                     } else if(bot.type == RobotType.BOOSTER){
                     	int botDist = me.distanceSquaredTo(bot.location);
-                    	scoredEnemies.add(new ScoredBot(bot, botDist * 2));
+                    	scoredEnemies.add(new ScoredBot(bot, botDist * 2 * health));
                     } else if(bot.type == RobotType.LAUNCHER){
                     	int botDist = me.distanceSquaredTo(bot.location);
-                    	scoredEnemies.add(new ScoredBot(bot, botDist * 3));
+                    	scoredEnemies.add(new ScoredBot(bot, botDist * 3 * health));
                     } else if(bot.type == RobotType.HEADQUARTERS){
                     	//haha no
                     } else {
                     	int botDist = me.distanceSquaredTo(bot.location);
-                    	scoredEnemies.add(new ScoredBot(bot, botDist * 4));
+                    	scoredEnemies.add(new ScoredBot(bot, botDist * 4 * health));
                     }
                 }
                 scoredEnemies.sort(Comparator.comparing(ScoredBot::getScore));
@@ -706,20 +705,17 @@ public strictfp class RobotPlayer {
                 	if(rc.canAttack(aBot.getLocation())){
                         rc.attack(aBot.getLocation());
                         flee(rc, aBot.getLocation());
-                        attacking = true;
                         break;
                     } 
                 }
-                if (!attacking) {
-                	for (ScoredBot aBot : scoredEnemies) {
-                		if (rc.canActLocation(aBot.getLocation())) {
-                            flee(rc, aBot.getLocation());
-                            break;
-                        } else {
-                        	//mooTwo(rc, aBot.getLocation());
-                        }
-                	}
-                }
+            	for (ScoredBot aBot : scoredEnemies) {
+            		if (rc.canActLocation(aBot.getLocation())) {
+                        flee(rc, aBot.getLocation());
+                        break;
+                    } else {
+                    	//mooTwo(rc, aBot.getLocation());
+                    }
+            	}
             }
         }
         
@@ -1004,9 +1000,9 @@ class AdvMapLoc {
 
 class ScoredBot {
 	RobotInfo info;
-	int score;
+	double score;
 	
-	public ScoredBot(RobotInfo info, int score) {
+	public ScoredBot(RobotInfo info, double score) {
 		this.info = info;
 		this.score = score;
 	}
@@ -1014,7 +1010,7 @@ class ScoredBot {
 	public RobotInfo getInfo() {
 		return this.info;
 	}
-	public int getScore() {
+	public double getScore() {
 		return this.score;
 	}
 	public MapLocation getLocation() {
