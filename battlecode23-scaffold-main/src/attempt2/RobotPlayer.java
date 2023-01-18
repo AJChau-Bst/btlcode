@@ -449,10 +449,17 @@ public strictfp class RobotPlayer {
         				carrierCount++;
         			}
         		}
-        		int wellScore = ((me.distanceSquaredTo(hqs[nearHQidx]) + me.distanceSquaredTo(wellLoc)) * Math.max(1, (int) Math.floor((crowdSize / 2))) ) ;
-        		if (carrierCount > 10) {
+        		int wellScore = ((me.distanceSquaredTo(hqs[nearHQidx]) + me.distanceSquaredTo(wellLoc)) * Math.max(Math.round(rc.getRoundNum()/500), (int) Math.floor((crowdSize / 2))) ) ;
+        		if (carrierCount > 8) {
         			if (aWell.getResourceType() == ResourceType.ADAMANTIUM) {
-        				wellScore = Math.round(wellScore/2);
+        				wellScore = Math.round(wellScore*2);
+        			}
+        		}
+        		if (hqSpotted) {
+        			if(rc.canSenseLocation(preciseTarget)) {
+        				if (rc.senseRobotAtLocation(preciseTarget).getResourceAmount(ResourceType.ADAMANTIUM) > 600) {
+            				wellScore = 200001;
+            			}
         			}
         		}
         		if (wellScore < bestWellScore) {
@@ -464,27 +471,12 @@ public strictfp class RobotPlayer {
     			mooTwo(rc, desiredWell);
     			rc.setIndicatorString("Moving to well!" + desiredWell.x + " " + desiredWell.y);
         	} else {
-        		flee(rc, desiredWell);
         		rc.setIndicatorString("Looking for another well!");
+        		carrierDispersion(rc, edges);
         	}
         } else {
-        	RobotInfo[] nearbyBots = rc.senseNearbyRobots(rc.getType().visionRadiusSquared);
-        	MapLocation nearestBot = new MapLocation(61,61);
-        	for (RobotInfo aBot : nearbyBots) {
-        		if (me.distanceSquaredTo(aBot.getLocation()) < me.distanceSquaredTo(nearestBot)) {
-        			nearestBot = aBot.getLocation();
-        		}
-        	}
-        	for (MapLocation aLoc : edges) {
-        		if (me.distanceSquaredTo(aLoc) < me.distanceSquaredTo(nearestBot)){
-        			nearestBot = aLoc;
-                }
-        	}
-        	if (rc.onTheMap(nearestBot)) {
-        		flee(rc, nearestBot);
-        	} else {
-        		mooTwo(rc, new MapLocation(Math.round(rc.getMapWidth()/2),Math.round(rc.getMapHeight()/2)));
-        	}
+        	rc.setIndicatorString("Looking for another well!");
+        	carrierDispersion(rc, edges);
         }
 
         
@@ -666,6 +658,49 @@ public strictfp class RobotPlayer {
             	}
             }
         }
+        if (rc.getActionCooldownTurns() <= GameConstants.COOLDOWN_LIMIT) {
+        	enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, enemy);
+        	scoredEnemies = new ArrayList<ScoredBot>();
+            attacking = false;
+            if (enemies.length > 0){
+                for(RobotInfo bot : enemies) {
+                    if(bot.type == RobotType.DESTABILIZER){
+                    	int botDist = me.distanceSquaredTo(bot.location);
+                    	scoredEnemies.add(new ScoredBot(bot, botDist));
+                    } else if(bot.type == RobotType.BOOSTER){
+                    	int botDist = me.distanceSquaredTo(bot.location);
+                    	scoredEnemies.add(new ScoredBot(bot, botDist * 2));
+                    } else if(bot.type == RobotType.LAUNCHER){
+                    	int botDist = me.distanceSquaredTo(bot.location);
+                    	scoredEnemies.add(new ScoredBot(bot, botDist * 3));
+                    } else if(bot.type == RobotType.HEADQUARTERS){
+                    	//haha no
+                    } else {
+                    	int botDist = me.distanceSquaredTo(bot.location);
+                    	scoredEnemies.add(new ScoredBot(bot, botDist * 4));
+                    }
+                }
+                scoredEnemies.sort(Comparator.comparing(ScoredBot::getScore));
+                for (ScoredBot aBot : scoredEnemies) {
+                	if(rc.canAttack(aBot.getLocation())){
+                        rc.attack(aBot.getLocation());
+                        flee(rc, aBot.getLocation());
+                        attacking = true;
+                        break;
+                    } 
+                }
+                if (!attacking) {
+                	for (ScoredBot aBot : scoredEnemies) {
+                		if (rc.canActLocation(aBot.getLocation())) {
+                            flee(rc, aBot.getLocation());
+                            break;
+                        } else {
+                        	//mooTwo(rc, aBot.getLocation());
+                        }
+                	}
+                }
+            }
+        }
         
         /*rc.setIndicatorString("Moving to center of map - " + centerOfMap.toString());
         if(me.equals(centerOfMap) || me.isAdjacentTo(centerOfMap)){
@@ -787,12 +822,28 @@ public strictfp class RobotPlayer {
 
     public static void mooTwo(RobotController rc, MapLocation loc) throws GameActionException {
         Direction dir = rc.getLocation().directionTo(loc);
+        if (dir == Direction.CENTER) {
+        	int width = rc.getMapWidth();
+            int height = rc.getMapHeight();
+        	int centerWidth = Math.round(width/2);
+            int centerHeight = Math.round(height/2);
+            MapLocation centerOfMap = new MapLocation(centerWidth, centerHeight);
+        	dir = rc.getLocation().directionTo(centerOfMap);
+        }
         Direction secDir = dirSecDir(rc.getLocation(), loc);
         scoot(rc, dir, secDir);
     }
     
     public static void flee(RobotController rc, MapLocation loc) throws GameActionException {
         Direction dir = rc.getLocation().directionTo(loc).opposite();
+        if (dir == Direction.CENTER) {
+        	int width = rc.getMapWidth();
+            int height = rc.getMapHeight();
+        	int centerWidth = Math.round(width/2);
+            int centerHeight = Math.round(height/2);
+            MapLocation centerOfMap = new MapLocation(centerWidth, centerHeight);
+        	dir = rc.getLocation().directionTo(centerOfMap);
+        }
         Direction secDir = dirSecDir(rc.getLocation(), loc).opposite();
         scoot(rc, dir, secDir);
     }
@@ -844,9 +895,9 @@ public strictfp class RobotPlayer {
     	MapLocation me = rc.getLocation();
     	int x = me.x;
     	int y = me.y;
-    	MapLocation north = new MapLocation(x, height);
+    	MapLocation north = new MapLocation(x, height - 1);
     	MapLocation south = new MapLocation(x, 0);
-    	MapLocation east = new MapLocation(width, y);
+    	MapLocation east = new MapLocation(width - 1, y);
     	MapLocation west = new MapLocation(0, y);
     	ArrayList<MapLocation> locs = new ArrayList<MapLocation>();
     	if (rc.canSenseLocation(north)) {
@@ -862,6 +913,29 @@ public strictfp class RobotPlayer {
     		locs.add(west);
     	}
     	return locs;
+    }
+    
+    public static void carrierDispersion(RobotController rc, ArrayList<MapLocation> edges) throws GameActionException {
+    	MapLocation me = rc.getLocation();
+    	RobotInfo[] nearbyBots = rc.senseNearbyRobots(rc.getType().visionRadiusSquared);
+    	MapLocation nearestBot = new MapLocation(61,61);
+    	for (RobotInfo aBot : nearbyBots) {
+    		if (aBot.getType() == RobotType.CARRIER) {
+        		if (me.distanceSquaredTo(aBot.getLocation()) < me.distanceSquaredTo(nearestBot)) {
+        			nearestBot = aBot.getLocation();
+        		}
+    		}
+    	}
+    	for (MapLocation aLoc : edges) {
+    		if (me.distanceSquaredTo(aLoc) < me.distanceSquaredTo(nearestBot)){
+    			nearestBot = aLoc;
+            }
+    	}
+    	if (rc.onTheMap(nearestBot)) {
+    		flee(rc, nearestBot);
+    	} else {
+    		mooTwo(rc, new MapLocation(Math.round(rc.getMapWidth()/2),Math.round(rc.getMapHeight()/2)));
+    	}
     }
 } 
 
