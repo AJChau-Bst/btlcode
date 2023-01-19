@@ -127,7 +127,7 @@ public strictfp class RobotPlayer {
         Team friendly = rc.getTeam();
 
         
-        //Find Nearby Wells
+        //Choose Spawn Locations
         RobotInfo[] enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, friendly.opponent());
         ArrayList<AdvMapLoc> spawnLocs = new ArrayList<AdvMapLoc>();
         if(enemies.length > 0) {
@@ -136,10 +136,54 @@ public strictfp class RobotPlayer {
         } else {
         	spawnLocs = locationsAround(rc, me, centerOfMap, rc.getType().actionRadiusSquared);
         }
-        
+      //Get Array of Nearby Robots, Count the NUmber of Carriers, launchers
+        int carrierCounter = 0;
+        int launcherCounter = 0;
+        int adCount = 0;
+        RobotInfo[] friends = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, friendly);
+        if(friends.length > 0) {
+            for(RobotInfo bot : friends){
+            	adCount = adCount + bot.getResourceAmount(ResourceType.ADAMANTIUM);
+                if (bot.type == RobotType.CARRIER){
+                	if (bot.getTotalAnchors() == 0) {
+                        carrierCounter++;
+                	}
+                } else if (bot.type == RobotType.LAUNCHER){
+                    launcherCounter++;
+                }
+            }
+        }
+        adCount = adCount + rc.getResourceAmount(ResourceType.ADAMANTIUM);
       //Spawn Launcher Code
         //ArrayList<AdvMapLoc> launcherSpawnLocs = locationsAround(rc, me, centerOfMap, rc.getType().actionRadiusSquared);
-        if(rc.getResourceAmount(ResourceType.MANA) >= 100 && rng.nextInt(2000) > turnCount) {
+        if (rc.getRoundNum() < 60) {
+        	if(rc.getResourceAmount(ResourceType.MANA) >= RobotType.LAUNCHER.getBuildCost(ResourceType.MANA)) {
+            	for (AdvMapLoc advLoc : spawnLocs) {
+            		if (rc.canBuildRobot(RobotType.LAUNCHER, advLoc.loc)){
+                        rc.buildRobot(RobotType.LAUNCHER, advLoc.loc);
+                        break;
+                    }
+            	}
+            }
+        } else if (launcherCounter == 0) {
+        	if(rc.getResourceAmount(ResourceType.MANA) >= turnCount) {
+            	for (AdvMapLoc advLoc : spawnLocs) {
+            		if (rc.canBuildRobot(RobotType.LAUNCHER, advLoc.loc)){
+                        rc.buildRobot(RobotType.LAUNCHER, advLoc.loc);
+                        break;
+                    }
+            	}
+        	} else if (enemies.length > 0) {
+        		if(rc.getResourceAmount(ResourceType.MANA) >= RobotType.LAUNCHER.getBuildCost(ResourceType.MANA)) {
+                	for (AdvMapLoc advLoc : spawnLocs) {
+                		if (rc.canBuildRobot(RobotType.LAUNCHER, advLoc.loc)){
+                            rc.buildRobot(RobotType.LAUNCHER, advLoc.loc);
+                            break;
+                        }
+                	}
+                }
+        	}
+        } else if(rc.getResourceAmount(ResourceType.MANA) >= 100 && rng.nextInt(2000) > turnCount) {
         	for (AdvMapLoc advLoc : spawnLocs) {
         		if (rc.canBuildRobot(RobotType.LAUNCHER, advLoc.loc)){
                     rc.buildRobot(RobotType.LAUNCHER, advLoc.loc);
@@ -148,22 +192,12 @@ public strictfp class RobotPlayer {
         	}
         }
         
+        
         //Direction targetAdWell = rc.getLocation().directionTo(nearestAdWell);
         //Build Carriers, if we can build carriers -- NEED TO CHANGE THIS LOGIC/ADD AND CONDITION
-        //Get Array of Nearby Robots, Count the NUmber of Carriers
-        int carrierCounter = 0;
-        RobotInfo[] friends = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, friendly);
-        if(friends.length > 0) {
-            for(RobotInfo bot : friends){
-                if (bot.type == RobotType.CARRIER){
-                	if (bot.getTotalAnchors() == 0) {
-                        carrierCounter++;
-                	}
-                }
-            }
-        }
+        
         ///ADJUST NUMBER OF CARRIERS HERE///
-        double mapSizeAdjust = Math.sqrt(rc.getMapWidth()*rc.getMapHeight());
+        double mapSizeAdjust = Math.sqrt(rc.getMapWidth()*rc.getMapHeight()/((adCount/10)+1));
         if(carrierCounter <= mapSizeAdjust){
             //System.out.println("Printing Carrier");
             //System.out.println("Printing Carrier, + " + carrierCounter);
@@ -199,13 +233,13 @@ public strictfp class RobotPlayer {
         	rc.writeSharedArray(lookingForIndex - 3, buttTranslation);
         	rc.setIndicatorString("Documenting my location!");
         } 
-        MapLocation hqOne = buttToDec(rc.readSharedArray(lookingForIndex), width, height);
+        /*MapLocation hqOne = buttToDec(rc.readSharedArray(lookingForIndex), width, height);
         MapLocation hqTwo = buttToDec(rc.readSharedArray(lookingForIndex-1), width, height);
         MapLocation hqThree = buttToDec(rc.readSharedArray(lookingForIndex-2), width, height);
         MapLocation hqFour = buttToDec(rc.readSharedArray(lookingForIndex-3), width, height);
-        rc.setIndicatorString(hqOne.x + " " + hqOne.y + " " + hqTwo.x + " " + hqTwo.y + " " + hqThree.x + " " + hqThree.y + " " + hqFour.x + " " + hqFour.y + " ");
+        rc.setIndicatorString(hqOne.x + " " + hqOne.y + " " + hqTwo.x + " " + hqTwo.y + " " + hqThree.x + " " + hqThree.y + " " + hqFour.x + " " + hqFour.y + " ");*/
 
-        //When threshold for resources, create an anchor
+    	//When threshold for resources, create an anchor
         if (rc.senseRobotAtLocation(me).getTotalAnchors() == 0) {
         	if (rc.getResourceAmount(ResourceType.ELIXIR) >= 300) {
         		if (rc.canBuildAnchor(Anchor.ACCELERATING)) {
@@ -216,10 +250,10 @@ public strictfp class RobotPlayer {
         		if (rc.canBuildAnchor(Anchor.STANDARD)) {
 	                rc.buildAnchor(Anchor.STANDARD);
 	                rc.setIndicatorString("Building an anchor!");
-	        	}
-	     	} 
-	    }
-	}
+        		}
+     		}
+    	}
+    }
 
     /**
      * Run a single turn for a Carrier.
@@ -235,6 +269,7 @@ public strictfp class RobotPlayer {
     	ArrayList<MapLocation> edges = senseMapEdges(rc, width, height);
         
         //If Robot is full, go to the closest HQ to deposit.
+    	//Check resource amounts and weight
         int elAmt = rc.getResourceAmount(ResourceType.ELIXIR);
         int adAmt = rc.getResourceAmount(ResourceType.ADAMANTIUM);
         int maAmt = rc.getResourceAmount(ResourceType.MANA);
@@ -246,6 +281,7 @@ public strictfp class RobotPlayer {
         MapLocation preciseTarget = new MapLocation(61,61);
         
         //Find friendly HQs
+    	int carrierCount = 0;
         Team friendly = rc.getTeam();
         RobotInfo[] friends = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, friendly);
         if(friends.length > 0) {
@@ -254,7 +290,9 @@ public strictfp class RobotPlayer {
                     preciseTarget = bot.getLocation(); 
                 	hqSpotted = true;
                     break;
-                }
+                } else if (bot.getType() == RobotType.CARRIER) {
+    				carrierCount++;
+    			}
         	}
         }
         
@@ -275,6 +313,7 @@ public strictfp class RobotPlayer {
                 	}
                 }
         	}
+        	//Run away, but if they get too close, dump resources on them
         	if (rc.onTheMap(nearestEnemy)) {
         		if (total >= 5) {
         			if(rc.canAttack(nearestEnemy)) {
@@ -303,7 +342,7 @@ public strictfp class RobotPlayer {
         }
         
         if (total > 0) {
-        	//if full of resource, scan for nearest HQ and move there.
+        	//if full of resource, scan for nearest HQ and deposit there.
         	if (rc.onTheMap(preciseTarget)) {
         		if(me.isAdjacentTo(preciseTarget)){
                     rc.setIndicatorString("IM CONSTIPATED!!");
@@ -319,7 +358,7 @@ public strictfp class RobotPlayer {
                         rc.transferResource(preciseTarget, ResourceType.ELIXIR, rc.getResourceAmount(ResourceType.ELIXIR));
                         rc.setIndicatorString("(E) i think i pooped :(");
                     }
-                } else if (total >= desiredResourceAmount) {
+                } else if (total >= desiredResourceAmount) { //If hq can be seen, but not adjacent, move towards it (if trying to deposit)
 		        	if(friends.length > 0) {
 		            	for(RobotInfo bot : friends){
 		                    if (bot.type == RobotType.HEADQUARTERS){
@@ -333,6 +372,7 @@ public strictfp class RobotPlayer {
 		            }
                 }
         	}
+        	//If trying to deposit, but hq isn't visible, move towards the approximation
         	if (total >= desiredResourceAmount) {	
 	        	if(hqSpotted == false) {
 	    	        //Direction nearestHQ = me.directionTo(hqs[nearHQidx]);
@@ -358,9 +398,8 @@ public strictfp class RobotPlayer {
         		}
         	}
         }
-        
+        //If carrying an anchor, find somewhere to put it
         if (rc.getAnchor() != null) {
-        	
     		//Scan for visible islands, determine which is closest, and move to it
     		int[] nearbyIslands = rc.senseNearbyIslands();
     		if (nearbyIslands.length > 0) {
@@ -403,26 +442,11 @@ public strictfp class RobotPlayer {
                 		mooTwo(rc, nearestIsland);
                 		rc.setIndicatorString("Heading to an island!" + nearestIsland.x + " " + nearestIsland.y);
                 	} else {
-                		if(friends.length > 0) {
-                			MapLocation nearestAnchorBot = new MapLocation(61,61);
-                        	for(RobotInfo bot : friends){
-                        		if(bot.getTotalAnchors() > 0) {
-                        			if (me.distanceSquaredTo(bot.getLocation()) < me.distanceSquaredTo(nearestAnchorBot)){
-                                    	nearestAnchorBot = bot.getLocation();
-                                    }
-                        		}
-                        	}
-                        	for (MapLocation aLoc : edges) {
-                        		if (me.distanceSquaredTo(aLoc) < me.distanceSquaredTo(nearestAnchorBot)){
-                                	nearestAnchorBot = aLoc;
-                                }
-                        	}
-                        	if (rc.onTheMap(nearestAnchorBot)) {
-                        		flee(rc, nearestAnchorBot);
-                        	}
-                        }
+                		anchorDispersion(rc, edges, friends);
             		}
         		}
+        	} else {
+        		anchorDispersion(rc, edges, friends);
         	}
         }
         //Find Wells
@@ -431,15 +455,15 @@ public strictfp class RobotPlayer {
         //if adjacent to well, start fucking collecting
         boolean collecting = false;
         boolean collectHere = true;
+    	int adCount = 0;
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
                 MapLocation wellLocation = new MapLocation(me.x + dx, me.y + dy);
                 if (rc.canCollectResource(wellLocation, -1)){
-                	int adCount = 0;
                 	for (RobotInfo aBot : friends) {
                 		adCount += aBot.getResourceAmount(ResourceType.ADAMANTIUM);
                 	}
-    				if (adCount > 300) {
+    				if (adCount > 285) {
         				if (rc.senseWell(wellLocation).getResourceType() == ResourceType.ADAMANTIUM) {
         					collectHere = false;
         				}
@@ -462,30 +486,28 @@ public strictfp class RobotPlayer {
         //if wells nearby and not crowded, move to them
         if(nearWell.length >= 1 && weight < desiredResourceAmount && !collecting){
     		MapLocation desiredWell = new MapLocation(61,61);
-    		int bestWellScore = 241;
+    		int bestWellScore = 360;
         	for (WellInfo aWell : nearWell) {
         		MapLocation wellLoc = aWell.getMapLocation();
         		RobotInfo[] atWell = rc.senseNearbyRobots(wellLoc, 4, friendly);
         		int crowdSize = atWell.length;
-        		int carrierCount = 0;
-        		for (RobotInfo aBot : atWell) {
-        			if (aBot.getType() == RobotType.CARRIER) {
-        				carrierCount++;
-        			}
-        		}
+        		
         		int wellScore = ((wellLoc.distanceSquaredTo(hqs[nearHQidx]) + me.distanceSquaredTo(wellLoc)) * Math.max((int) Math.floor(rc.getRoundNum()/1000) + 1, (int) Math.floor((crowdSize / 2))) ) ;
-        		if (carrierCount >= 8) {
-        			if (aWell.getResourceType() == ResourceType.ADAMANTIUM) {
-        				wellScore = Math.round(wellScore*10);
-        			}
-        		}
-        		if (hqSpotted) {
-        			if(rc.canSenseLocation(preciseTarget)) {
-        				if (rc.senseRobotAtLocation(preciseTarget).getResourceAmount(ResourceType.ADAMANTIUM) > 190) {
-            				wellScore = 200001;
+        		if (aWell.getResourceType() == ResourceType.ADAMANTIUM) {
+        			if (carrierCount > 6) {
+            			wellScore = wellScore*5;
+            		}
+        			if (adCount > 285) {
+            			wellScore = wellScore*5;
+            		}
+        			if (hqSpotted) {
+            			if(rc.canSenseLocation(preciseTarget)) {
+            				if (rc.senseRobotAtLocation(preciseTarget).getResourceAmount(ResourceType.ADAMANTIUM) > 380) {
+                				wellScore = 200001;
+                			}
             			}
-        			}
-        		}
+            		}
+    			}
         		if (wellScore < bestWellScore) {
         			desiredWell = wellLoc;
         			bestWellScore = wellScore;
@@ -499,7 +521,7 @@ public strictfp class RobotPlayer {
         		carrierDispersion(rc, edges);
         	}
         } else if (!collecting) {
-        	rc.setIndicatorString("Looking for another well!");
+        	rc.setIndicatorString("Looking for a well!");
         	carrierDispersion(rc, edges);
         }
 
@@ -513,19 +535,15 @@ public strictfp class RobotPlayer {
         int width = rc.getMapWidth();
         int height = rc.getMapHeight();
         MapLocation me = rc.getLocation();
-        //move to center
         int centerWidth = Math.round(width/2);
         int centerHeight = Math.round(height/2);
         MapLocation centerOfMap = new MapLocation(centerWidth, centerHeight);
-        //Direction launcherDir = me.directionTo(centerOfMap);
-        
-
         MapLocation nearestFriend = new MapLocation(-1,-1);
         int friendDist = 7201;
         
-        //Find friendly HQs
+        //Find friendlies
         MapLocation base = new MapLocation(61,61);
-        int baseDist = 7201;
+        //int baseDist = 7201;
         boolean hqSpotted = false;
         Team friendly = rc.getTeam();
         int friendCount = 0; //oof
@@ -535,7 +553,7 @@ public strictfp class RobotPlayer {
         	for(RobotInfo bot : friends){
                 if (bot.type == RobotType.HEADQUARTERS){
                     base = bot.getLocation(); 
-                    baseDist = me.distanceSquaredTo(base);
+                    //baseDist = me.distanceSquaredTo(base);
                 	hqSpotted = true;
                 } else if (bot.type == RobotType.LAUNCHER) { //Count friendly army
                 	friendCount++;
@@ -555,6 +573,7 @@ public strictfp class RobotPlayer {
         	}
         }
 
+        //check if blocking movement
         int wallSize = 0;
         for (Direction dir : directions) {
         	if (!rc.canMove(dir)) {
@@ -573,7 +592,7 @@ public strictfp class RobotPlayer {
                 	enemyHQ = bot.getLocation(); 
                 }
         	}
-    		crowd = rc.senseNearbyRobots(enemyHQ, 4, friendly).length;
+    		crowd = rc.senseNearbyRobots(enemyHQ, 34, friendly).length;
         }
         
         //Friendly and enemy HQ location calculation
@@ -613,10 +632,10 @@ public strictfp class RobotPlayer {
         	}
         }
         
-        //if see enemy, shoot
+        //if see enemy, shoot and scoot, or scoot and shoot
         ArrayList<ScoredBot> scoredEnemies = new ArrayList<ScoredBot>();
         if (enemies.length > 0){
-            for(RobotInfo bot : enemies) {
+            for(RobotInfo bot : enemies) { //Rank enemies by importance
                 if(bot.type == RobotType.DESTABILIZER){
                 	int botDist = me.distanceSquaredTo(bot.location);
                 	scoredEnemies.add(new ScoredBot(bot, botDist));
@@ -650,8 +669,9 @@ public strictfp class RobotPlayer {
                 }
         	}
         }
+        //If no enemies, go somewhere useful
         if (scoredEnemies.size() < 1) {
-        	if (hqSpotted) {
+        	if (hqSpotted) { //defend hq
             	if (me.isAdjacentTo(base)) {
             		mooTwo(rc, enemyHQs[nearEnemyHQidx]);
             	} else if(wallSize >= 3) {
@@ -667,7 +687,7 @@ public strictfp class RobotPlayer {
                         rc.setIndicatorString("Marching to enemy HQ! " + enemyHQs[nearEnemyHQidx].x + " " + enemyHQs[nearEnemyHQidx].y);
             		}
             	}
-            } else {
+            } else {//go somewhere //needs strategic coordination
             	if (friendCount >= 2) {
             		if (crowd <= 2) {
             			if (turnCount < 100) {
@@ -690,6 +710,7 @@ public strictfp class RobotPlayer {
             	}
             }
         }
+        //Try shooting again, after moving
         if (rc.getActionCooldownTurns() <= GameConstants.COOLDOWN_LIMIT) {
         	enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, enemy);
         	scoredEnemies = new ArrayList<ScoredBot>();
@@ -960,9 +981,15 @@ public strictfp class RobotPlayer {
     	MapLocation nearestBot = new MapLocation(61,61);
     	for (RobotInfo aBot : nearbyBots) {
     		if (aBot.getType() == RobotType.CARRIER) {
-        		if (me.distanceSquaredTo(aBot.getLocation()) < me.distanceSquaredTo(nearestBot)) {
-        			nearestBot = aBot.getLocation();
-        		}
+    			int total = aBot.getResourceAmount(ResourceType.ADAMANTIUM);
+    			total = total + aBot.getResourceAmount(ResourceType.MANA);
+    			total = total + aBot.getResourceAmount(ResourceType.ELIXIR);
+    			total = total + aBot.getTotalAnchors()*40;
+    			if (total < 1) {
+    				if (me.distanceSquaredTo(aBot.getLocation()) < me.distanceSquaredTo(nearestBot)) {
+            			nearestBot = aBot.getLocation();
+            		}
+    			}
     		}
     	}
     	for (MapLocation aLoc : edges) {
@@ -975,6 +1002,28 @@ public strictfp class RobotPlayer {
     	} else {
     		mooTwo(rc, new MapLocation(Math.round(rc.getMapWidth()/2),Math.round(rc.getMapHeight()/2)));
     	}
+    }
+    
+    public static void anchorDispersion(RobotController rc, ArrayList<MapLocation> edges, RobotInfo[] friends) throws GameActionException {
+    	MapLocation me = rc.getLocation();
+    	if(friends.length > 0) {
+			MapLocation nearestAnchorBot = new MapLocation(61,61);
+        	for(RobotInfo bot : friends){
+        		if(bot.getTotalAnchors() > 0) {
+        			if (me.distanceSquaredTo(bot.getLocation()) < me.distanceSquaredTo(nearestAnchorBot)){
+                    	nearestAnchorBot = bot.getLocation();
+                    }
+        		}
+        	}
+        	for (MapLocation aLoc : edges) {
+        		if (me.distanceSquaredTo(aLoc) < me.distanceSquaredTo(nearestAnchorBot)){
+                	nearestAnchorBot = aLoc;
+                }
+        	}
+        	if (rc.onTheMap(nearestAnchorBot)) {
+        		flee(rc, nearestAnchorBot);
+        	}
+        }
     }
 } 
 
