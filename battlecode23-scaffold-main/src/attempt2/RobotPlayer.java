@@ -126,12 +126,9 @@ public strictfp class RobotPlayer {
         MapLocation centerOfMap = new MapLocation(centerWidth, centerHeight);
         Team friendly = rc.getTeam();
 
-<<<<<<< Updated upstream
-=======
         //if can't see amplifier, spawn amplifier
 
         
->>>>>>> Stashed changes
         //Choose Spawn Locations
         RobotInfo[] enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, friendly.opponent());
         ArrayList<AdvMapLoc> spawnLocs = new ArrayList<AdvMapLoc>();
@@ -142,10 +139,12 @@ public strictfp class RobotPlayer {
         	spawnLocs = locationsAround(rc, me, centerOfMap, rc.getType().actionRadiusSquared);
         }
 
-      //Get Array of Nearby Robots, Count the NUmber of Carriers, launchers
+      //Get Array of Nearby Robots, Count the NUmber of Carriers, launchers, amplifiers
         int carrierCounter = 0;
         int launcherCounter = 0;
+        int amplifierCounter = 0;
         int adCount = 0;
+        MapLocation meep = locationsAround(rc, me, rc.getLocation(), rc.getType().actionRadiusSquared());
         RobotInfo[] friends = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, friendly);
         if(friends.length > 0) {
             for(RobotInfo bot : friends){
@@ -156,10 +155,21 @@ public strictfp class RobotPlayer {
                 	}
                 } else if (bot.type == RobotType.LAUNCHER){
                     launcherCounter++;
+                } else if (bot.type == RobotType.AMPLIFIER){
+                    amplifierCounter++;
                 }
             }
         }
         adCount = adCount + rc.getResourceAmount(ResourceType.ADAMANTIUM);
+        //Spawn Amplifier Code
+		if (launcherCounter > 2 && amplifierCounter == 0) {
+			for (AdvMapLoc advLoc : spawnLocs) {
+            	if (rc.canBuildRobot(RobotType.AMPLIFIER, meep)){
+                    rc.buildRobot(RobotType.AMPLIFIER, meep);
+                    break;
+                }
+		}
+        }
 
       //Spawn Launcher Code
         //ArrayList<AdvMapLoc> launcherSpawnLocs = locationsAround(rc, me, centerOfMap, rc.getType().actionRadiusSquared);
@@ -199,23 +209,7 @@ public strictfp class RobotPlayer {
         	}
         }
 
-		//Spawn Amplifier Code
-		int launcherCount = 0
-		int amplifierCount = 0
-		Team friendly = rc.getTeam();
-		RobotInfo[] friends = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, friendly);
-		if (bot.getType() == RobotType.LAUNCHER) {
-			launcherCount++;
-		}
-		if (bot.getType() == RobotType.AMPLIFIER) {
-			amplifierCount++;
-		}
-		if (laucherCount > 2 && amplifierCount == 0) {
-			if (rc.canBuildRobot(RobotType.AMPLIFIER, advLoc.Loc)) {
-				rc.buildRobot(RobotType.AMPLFIER, advLoc.loc);
-				break;
-			}
-		}
+    
 		
         //Direction targetAdWell = rc.getLocation().directionTo(nearestAdWell);
         //Build Carriers, if we can build carriers -- NEED TO CHANGE THIS LOGIC/ADD AND CONDITION
@@ -795,10 +789,15 @@ public strictfp class RobotPlayer {
     static void runAmplifiers(RobotController rc) throws GameActionException {
         int width = rc.getMapWidth();
         int height = rc.getMapHeight();
+        MapLocation me = rc.getLocation();
+        int centerWidth = Math.round(width/2);
+        int centerHeight = Math.round(height/2);
+        MapLocation centerOfMap = new MapLocation(centerWidth, centerHeight);
+        mooTwo(rc,centerOfMap);
         //scan/ if see group of enemies
         //drive towards center, add all other nav commands (avoidance, flee, etc)
         //if HQ symmetry value has nothing, if see HQ, find what kind of symmetry this is, write that to the array
-
+/* 
         if(rc.readSharedArray(59, 0)){
         RobotInfo[] enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, enemy);
         if(enemies.length > 0) {
@@ -823,8 +822,8 @@ public strictfp class RobotPlayer {
         	}
 
         }
-        }
-    
+        } */
+    }
         //NEXT CHUNK HERE
 
         //Rotational HQ Symmetry Map
