@@ -126,7 +126,6 @@ public strictfp class RobotPlayer {
         MapLocation centerOfMap = new MapLocation(centerWidth, centerHeight);
         Team friendly = rc.getTeam();
 
-        
         //Choose Spawn Locations
         RobotInfo[] enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, friendly.opponent());
         ArrayList<AdvMapLoc> spawnLocs = new ArrayList<AdvMapLoc>();
@@ -136,6 +135,7 @@ public strictfp class RobotPlayer {
         } else {
         	spawnLocs = locationsAround(rc, me, centerOfMap, rc.getType().actionRadiusSquared);
         }
+
       //Get Array of Nearby Robots, Count the NUmber of Carriers, launchers
         int carrierCounter = 0;
         int launcherCounter = 0;
@@ -154,10 +154,11 @@ public strictfp class RobotPlayer {
             }
         }
         adCount = adCount + rc.getResourceAmount(ResourceType.ADAMANTIUM);
+
       //Spawn Launcher Code
         //ArrayList<AdvMapLoc> launcherSpawnLocs = locationsAround(rc, me, centerOfMap, rc.getType().actionRadiusSquared);
         if (rc.getRoundNum() < 60) {
-        	if(rc.getResourceAmount(ResourceType.MANA) >= RobotType.LAUNCHER.getBuildCost(ResourceType.MANA)) {
+        	if (rc.getResourceAmount(ResourceType.MANA) >= RobotType.LAUNCHER.getBuildCost(ResourceType.MANA)) {
             	for (AdvMapLoc advLoc : spawnLocs) {
             		if (rc.canBuildRobot(RobotType.LAUNCHER, advLoc.loc)){
                         rc.buildRobot(RobotType.LAUNCHER, advLoc.loc);
@@ -185,14 +186,31 @@ public strictfp class RobotPlayer {
         	}
         } else if(rc.getResourceAmount(ResourceType.MANA) >= 100 && rng.nextInt(2000) > turnCount) {
         	for (AdvMapLoc advLoc : spawnLocs) {
-        		if (rc.canBuildRobot(RobotType.LAUNCHER, advLoc.loc)){
+        		if (rc.canBuildRobot(RobotType.LAUNCHER, advLoc.loc)) {
                     rc.buildRobot(RobotType.LAUNCHER, advLoc.loc);
                     break;
                 }
         	}
         }
-        
-        
+
+		//Spawn Amplifier Code
+		int launcherCount = 0
+		int amplifierCount = 0
+		Team friendly = rc.getTeam();
+		RobotInfo[] friends = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, friendly);
+		if (bot.getType() == RobotType.LAUNCHER) {
+			launcherCount++;
+		}
+		if (bot.getType() == RobotType.AMPLIFIER) {
+			amplifierCount++;
+		}
+		if (laucherCount > 2 && amplifierCount == 0) {
+			if (rc.canBuildRobot(RobotType.AMPLIFIER, advLoc.Loc)) {
+				rc.buildRobot(RobotType.AMPLFIER, advLoc.loc);
+				break;
+			}
+		}
+		
         //Direction targetAdWell = rc.getLocation().directionTo(nearestAdWell);
         //Build Carriers, if we can build carriers -- NEED TO CHANGE THIS LOGIC/ADD AND CONDITION
         
