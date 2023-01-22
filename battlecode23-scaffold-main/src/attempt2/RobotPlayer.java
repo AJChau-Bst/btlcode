@@ -126,6 +126,12 @@ public strictfp class RobotPlayer {
         MapLocation centerOfMap = new MapLocation(centerWidth, centerHeight);
         Team friendly = rc.getTeam();
 
+<<<<<<< Updated upstream
+=======
+        //if can't see amplifier, spawn amplifier
+
+        
+>>>>>>> Stashed changes
         //Choose Spawn Locations
         RobotInfo[] enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, friendly.opponent());
         ArrayList<AdvMapLoc> spawnLocs = new ArrayList<AdvMapLoc>();
@@ -589,7 +595,7 @@ public strictfp class RobotPlayer {
                 	friendCount+=4;
                 }
         	}
-        }
+        }   
 
         //check if blocking movement
         int wallSize = 0;
@@ -786,6 +792,44 @@ public strictfp class RobotPlayer {
             rc.setIndicatorString("Moving to enemy HQ - " + enemyHQs[nearHQidx]);
         }*/
     }
+    static void runAmplifiers(RobotController rc) throws GameActionException {
+        int width = rc.getMapWidth();
+        int height = rc.getMapHeight();
+        //scan/ if see group of enemies
+        //drive towards center, add all other nav commands (avoidance, flee, etc)
+        //if HQ symmetry value has nothing, if see HQ, find what kind of symmetry this is, write that to the array
+
+        if(rc.readSharedArray(59, 0)){
+        RobotInfo[] enemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, enemy);
+        if(enemies.length > 0) {
+        	for(RobotInfo bot : enemies){
+                if (bot.type == RobotType.HEADQUARTERS){
+                	enemyHQ = bot.getLocation(); 
+                    int enemyButtHQ = decToButt(enemyHQ, width, height);
+                    if(rc.readSharedArray(59, 0)){
+                        int[] HQLocation = int[4];
+                        for(int i = 60, i > 64, i++){
+                            for(int j = 0, j > 4, j++){
+                                HQLocation[j] = rc.readSharedArray(i); //now I have the butt Numbers of our HQ locations in a separate array. 
+                                }
+                        }
+                        for(int x : HQLocation){
+                            if (enemyButtHQ == HQLocation){
+                                rc.writeSharedArray(59, 1);
+                            }
+                        }
+                    }
+                }
+        	}
+
+        }
+        }
+    
+        //NEXT CHUNK HERE
+
+        //Rotational HQ Symmetry Map
+        //if any of the 60-64 of shared array goes into findSymmetric and returns true, then write the correct type of symmetry in index 59
+        //need math help for vertical and horizontal symmetry
 
     public static MapLocation findSymmetric(MapLocation map, int width, int height){
         int x = map.x;
